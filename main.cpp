@@ -37,7 +37,8 @@ void drawCircle(float cx, float cy, float r, int segments) {
 }
 
 // Helper for smooth rounded mountain domes
-void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g, float b) {
+void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g,
+					  float b) {
 	glColor3f(r, g, b);
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex2f(cx, cy);
@@ -475,22 +476,31 @@ void drawTree(float x, float y, float scale) {
 // Tropical Layered Rounded Hills
 void drawTropicalHills() {
 	// LAYER 1: Distant Misty Mountains (Atmospheric Teal/Blue-Green)
-	Color3 farHaze = { 0.30f, 0.50f, 0.52f };
-	drawMountainDome(200.0f, 250.0f, 500.0f, 420.0f, farHaze.r, farHaze.g, farHaze.b);
-	drawMountainDome(750.0f, 250.0f, 600.0f, 480.0f, farHaze.r, farHaze.g, farHaze.b);
-	drawMountainDome(1400.0f, 250.0f, 550.0f, 430.0f, farHaze.r, farHaze.g, farHaze.b);
+	Color3 farHaze = {0.30f, 0.50f, 0.52f};
+	drawMountainDome(200.0f, 250.0f, 500.0f, 420.0f, farHaze.r, farHaze.g,
+					 farHaze.b);
+	drawMountainDome(750.0f, 250.0f, 600.0f, 480.0f, farHaze.r, farHaze.g,
+					 farHaze.b);
+	drawMountainDome(1400.0f, 250.0f, 550.0f, 430.0f, farHaze.r, farHaze.g,
+					 farHaze.b);
 
 	// LAYER 2: Midground Tropical Green Mountains
-	Color3 midGreen = { 0.20f, 0.42f, 0.26f };
-	drawMountainDome(-50.0f, 220.0f, 450.0f, 350.0f, midGreen.r, midGreen.g, midGreen.b);
-	drawMountainDome(500.0f, 220.0f, 550.0f, 380.0f, midGreen.r, midGreen.g, midGreen.b);
-	drawMountainDome(1150.0f, 220.0f, 500.0f, 360.0f, midGreen.r, midGreen.g, midGreen.b);
+	Color3 midGreen = {0.20f, 0.42f, 0.26f};
+	drawMountainDome(-50.0f, 220.0f, 450.0f, 350.0f, midGreen.r, midGreen.g,
+					 midGreen.b);
+	drawMountainDome(500.0f, 220.0f, 550.0f, 380.0f, midGreen.r, midGreen.g,
+					 midGreen.b);
+	drawMountainDome(1150.0f, 220.0f, 500.0f, 360.0f, midGreen.r, midGreen.g,
+					 midGreen.b);
 
 	// LAYER 3: Closer Sunny Lush Green Hills
-	Color3 closeGreen = { 0.28f, 0.52f, 0.22f };
-	drawMountainDome(220.0f, 200.0f, 480.0f, 280.0f, closeGreen.r, closeGreen.g, closeGreen.b);
-	drawMountainDome(850.0f, 200.0f, 520.0f, 310.0f, closeGreen.r, closeGreen.g, closeGreen.b);
-	drawMountainDome(1500.0f, 200.0f, 450.0f, 270.0f, closeGreen.r, closeGreen.g, closeGreen.b);
+	Color3 closeGreen = {0.28f, 0.52f, 0.22f};
+	drawMountainDome(220.0f, 140.0f, 680.0f, 280.0f, closeGreen.r, closeGreen.g,
+					 closeGreen.b);
+	drawMountainDome(850.0f, 140.0f, 520.0f, 310.0f, closeGreen.r, closeGreen.g,
+					 closeGreen.b);
+	drawMountainDome(1500.0f, 150.0f, 450.0f, 270.0f, closeGreen.r,
+					 closeGreen.g, closeGreen.b);
 
 	// LAYER 4: Valley Base (Warm Rice Paddy Green)
 	glColor3f(0.35f, 0.58f, 0.24f);
@@ -528,12 +538,15 @@ void drawGroundAndPath() {
 }
 
 void scene1() {
-	// 1. Sun
+	glPushMatrix();
+	glTranslatef(550.0f, 250.0f, 0.0f);
 	sun();
-
-	// 2. Tropical Soft Rolling Hills 
+	glPopMatrix();
+	// 2. Tropical Soft Rolling Hills
 	drawTropicalHills();
 
+	// 4. Ground Path
+	drawGroundAndPath();
 	// 3. Valley Tree Clusters
 	drawTree(100.0f, 210.0f, 0.75f);
 	drawTree(180.0f, 215.0f, 0.85f);
@@ -541,10 +554,6 @@ void scene1() {
 	drawTree(760.0f, 215.0f, 0.90f);
 	drawTree(1250.0f, 210.0f, 0.85f);
 	drawTree(1350.0f, 220.0f, 0.75f);
-
-	// 4. Ground Path
-	drawGroundAndPath();
-
 	// 5. Foreground Trees
 	drawTree(70.0f, 80.0f, 1.2f);
 	drawTree(1500.0f, 75.0f, 1.3f);
@@ -683,7 +692,7 @@ void scene1() {
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 	scene1();
-  glFlush();
+	glFlush();
 };
 
 void init() {
