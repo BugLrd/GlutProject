@@ -49,6 +49,18 @@ void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g,
 	glEnd();
 }
 
+void drawHill(float cx, float cy, float rx, float ry, float r, float g,
+			  float b) {
+	glColor3f(r, g, b);
+	glBegin(GL_TRIANGLE_FAN);
+	glVertex2f(cx, cy);
+	for (int i = 0; i <= 30; i++) {
+		float angle = (float)PI * i / 30.0f; // 0 to PI (top half curve)
+		glVertex2f(cx + rx * cosf(angle), cy + ry * sinf(angle));
+	}
+	glEnd();
+}
+
 //------------------------- Structs & Colors -------------------------
 struct Color3 {
 	float r, g, b;
@@ -449,7 +461,9 @@ void hut5(HutColors colors) {
 
 //------------------------- Trees & Tropical Hills -------------------------
 
-// Helper to draw a customizable tree
+//------------------------- Trees, Mountains & Hills -------------------------
+
+// Helper to draw a customizable pine tree
 void drawTree(float x, float y, float scale) {
 	glPushMatrix();
 	glTranslatef(x, y, 0.0f);
@@ -457,56 +471,70 @@ void drawTree(float x, float y, float scale) {
 
 	// Tree Trunk
 	glColor3f(0.35f, 0.20f, 0.10f);
-	drawRect(-8.0f, 0.0f, 8.0f, 35.0f);
+	drawRect(-10.0f, 0.0f, 10.0f, 40.0f);
 
-	// Foliage
-	glColor3f(0.12f, 0.35f, 0.14f);
-	drawTriangle(-50.0f, 25.0f, 0.0f, 25.0f, 0.0f, 90.0f);
-	glColor3f(0.20f, 0.50f, 0.22f);
-	drawTriangle(0.0f, 25.0f, 50.0f, 25.0f, 0.0f, 90.0f);
+	// Lower Foliage
+	glColor3f(0.12f, 0.38f, 0.15f); // Dark side
+	drawTriangle(-60.0f, 30.0f, 0.0f, 30.0f, 0.0f, 100.0f);
+	glColor3f(0.20f, 0.52f, 0.22f); // Light side
+	drawTriangle(0.0f, 30.0f, 60.0f, 30.0f, 0.0f, 100.0f);
 
-	glColor3f(0.12f, 0.35f, 0.14f);
-	drawTriangle(-40.0f, 60.0f, 0.0f, 60.0f, 0.0f, 125.0f);
-	glColor3f(0.20f, 0.50f, 0.22f);
-	drawTriangle(0.0f, 60.0f, 40.0f, 60.0f, 0.0f, 125.0f);
+	// Middle Foliage
+	glColor3f(0.12f, 0.38f, 0.15f);
+	drawTriangle(-50.0f, 70.0f, 0.0f, 70.0f, 0.0f, 140.0f);
+	glColor3f(0.20f, 0.52f, 0.22f);
+	drawTriangle(0.0f, 70.0f, 50.0f, 70.0f, 0.0f, 140.0f);
+
+	// Top Foliage
+	glColor3f(0.12f, 0.38f, 0.15f);
+	drawTriangle(-38.0f, 110.0f, 0.0f, 110.0f, 0.0f, 175.0f);
+	glColor3f(0.20f, 0.52f, 0.22f);
+	drawTriangle(0.0f, 110.0f, 38.0f, 110.0f, 0.0f, 175.0f);
 
 	glPopMatrix();
 }
 
-// Tropical Layered Rounded Hills
-void drawTropicalHills() {
-	// LAYER 1: Distant Misty Mountains (Atmospheric Teal/Blue-Green)
-	Color3 farHaze = {0.30f, 0.50f, 0.52f};
-	drawMountainDome(200.0f, 250.0f, 500.0f, 420.0f, farHaze.r, farHaze.g,
-					 farHaze.b);
-	drawMountainDome(750.0f, 250.0f, 600.0f, 480.0f, farHaze.r, farHaze.g,
-					 farHaze.b);
-	drawMountainDome(1400.0f, 250.0f, 550.0f, 430.0f, farHaze.r, farHaze.g,
-					 farHaze.b);
+// Green Mountain range (Lowered by 120 units)
+void drawMountains() {
+	glPushMatrix();
+	glTranslatef(0.0f, -120.0f,
+				 0.0f); // Adjust this Y offset to move higher/lower
 
-	// LAYER 2: Midground Tropical Green Mountains
-	Color3 midGreen = {0.20f, 0.42f, 0.26f};
-	drawMountainDome(-50.0f, 220.0f, 450.0f, 350.0f, midGreen.r, midGreen.g,
-					 midGreen.b);
-	drawMountainDome(500.0f, 220.0f, 550.0f, 380.0f, midGreen.r, midGreen.g,
-					 midGreen.b);
-	drawMountainDome(1150.0f, 220.0f, 500.0f, 360.0f, midGreen.r, midGreen.g,
-					 midGreen.b);
+	Color3 litGreen = {0.32f, 0.58f, 0.23f};	// Light facing slope
+	Color3 shadowGreen = {0.16f, 0.34f, 0.14f}; // Shadow slope
 
-	// LAYER 3: Closer Sunny Lush Green Hills
-	Color3 closeGreen = {0.28f, 0.52f, 0.22f};
-	drawMountainDome(220.0f, 140.0f, 680.0f, 280.0f, closeGreen.r, closeGreen.g,
-					 closeGreen.b);
-	drawMountainDome(850.0f, 140.0f, 520.0f, 310.0f, closeGreen.r, closeGreen.g,
-					 closeGreen.b);
-	drawMountainDome(1500.0f, 150.0f, 450.0f, 270.0f, closeGreen.r,
-					 closeGreen.g, closeGreen.b);
+	// --- 1. LEFT MOUNTAIN ---
+	glColor3f(litGreen.r, litGreen.g, litGreen.b);
+	drawTriangle(50.0f, 300.0f, 330.0f, 720.0f, 330.0f, 300.0f);
+	glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
+	drawTriangle(330.0f, 300.0f, 330.0f, 720.0f, 600.0f, 300.0f);
 
-	// LAYER 4: Valley Base (Warm Rice Paddy Green)
-	glColor3f(0.35f, 0.58f, 0.24f);
-	drawRect(0.0f, 0.0f, WIN_W, 250.0f);
+	// --- 2. CENTER TALL MOUNTAIN ---
+	glColor3f(litGreen.r, litGreen.g, litGreen.b);
+	drawTriangle(280.0f, 300.0f, 570.0f, 860.0f, 570.0f, 300.0f);
+	glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
+	drawTriangle(570.0f, 300.0f, 570.0f, 860.0f, 1150.0f, 300.0f);
+
+	// --- 3. RIGHT MOUNTAIN ---
+	glColor3f(litGreen.r, litGreen.g, litGreen.b);
+	drawTriangle(820.0f, 300.0f, 1050.0f, 650.0f, 1050.0f, 300.0f);
+	glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
+	drawTriangle(1050.0f, 300.0f, 1050.0f, 650.0f, 1450.0f, 300.0f);
+
+	glPopMatrix();
 }
-//--------------------End(Hill)-------------------------------------------------
+
+// Rolling Green Hills
+void drawHills() {
+	// Back Left Hill
+	drawHill(250.0f, 250.0f, 400.0f, 180.0f, 0.25f, 0.48f, 0.20f);
+
+	// Back Right Hill
+	drawHill(1350.0f, 250.0f, 450.0f, 190.0f, 0.22f, 0.44f, 0.18f);
+
+	// Front Center Rolling Hill
+	drawHill(800.0f, 230.0f, 500.0f, 200.0f, 0.28f, 0.52f, 0.22f);
+} //--------------------End(Hill)-------------------------------------------------
 
 void sun() {
 	glColor3f(1.0f, 0.85f, 0.0f);
@@ -543,15 +571,16 @@ void scene1() {
 	sun();
 	glPopMatrix();
 	// 2. Tropical Soft Rolling Hills
-	drawTropicalHills();
 
-	// 4. Ground Path
+	drawMountains();
+	drawHills();
 	drawGroundAndPath();
+
 	// 3. Valley Tree Clusters
 	drawTree(100.0f, 210.0f, 0.75f);
 	drawTree(180.0f, 215.0f, 0.85f);
-	drawTree(680.0f, 220.0f, 0.80f);
-	drawTree(760.0f, 215.0f, 0.90f);
+	// drawTree(680.0f, 220.0f, 0.80f);
+	drawTree(790.0f, 215.0f, 0.70f);
 	drawTree(1250.0f, 210.0f, 0.85f);
 	drawTree(1350.0f, 220.0f, 0.75f);
 	// 5. Foreground Trees
