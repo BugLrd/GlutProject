@@ -8,6 +8,7 @@
 #define WIN_H 1000
 #define PI 3.14159265358979323846
 
+//------------------------- Basic Drawing Helpers -------------------------
 void drawRect(float x1, float y1, float x2, float y2) {
 	glBegin(GL_QUADS);
 	glVertex2f(x1, y1);
@@ -35,7 +36,19 @@ void drawCircle(float cx, float cy, float r, int segments) {
 	glEnd();
 }
 
-//-------------------------Structs---------------------------------------
+// Helper for smooth rounded mountain domes
+void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g, float b) {
+	glColor3f(r, g, b);
+	glBegin(GL_TRIANGLE_FAN);
+	glVertex2f(cx, cy);
+	for (int i = 0; i <= 36; i++) {
+		float angle = (float)PI * i / 36.0f; // 0 to PI (top half dome)
+		glVertex2f(cx + rx * cosf(angle), cy + ry * sinf(angle));
+	}
+	glEnd();
+}
+
+//------------------------- Structs & Colors -------------------------
 struct Color3 {
 	float r, g, b;
 };
@@ -433,6 +446,58 @@ void hut5(HutColors colors) {
 
 //-----------------------------End(HutDesigns)-----------------------------
 
+//------------------------- Trees & Tropical Hills -------------------------
+
+// Helper to draw a customizable tree
+void drawTree(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	// Tree Trunk
+	glColor3f(0.35f, 0.20f, 0.10f);
+	drawRect(-8.0f, 0.0f, 8.0f, 35.0f);
+
+	// Foliage
+	glColor3f(0.12f, 0.35f, 0.14f);
+	drawTriangle(-50.0f, 25.0f, 0.0f, 25.0f, 0.0f, 90.0f);
+	glColor3f(0.20f, 0.50f, 0.22f);
+	drawTriangle(0.0f, 25.0f, 50.0f, 25.0f, 0.0f, 90.0f);
+
+	glColor3f(0.12f, 0.35f, 0.14f);
+	drawTriangle(-40.0f, 60.0f, 0.0f, 60.0f, 0.0f, 125.0f);
+	glColor3f(0.20f, 0.50f, 0.22f);
+	drawTriangle(0.0f, 60.0f, 40.0f, 60.0f, 0.0f, 125.0f);
+
+	glPopMatrix();
+}
+
+// Tropical Layered Rounded Hills
+void drawTropicalHills() {
+	// LAYER 1: Distant Misty Mountains (Atmospheric Teal/Blue-Green)
+	Color3 farHaze = { 0.30f, 0.50f, 0.52f };
+	drawMountainDome(200.0f, 250.0f, 500.0f, 420.0f, farHaze.r, farHaze.g, farHaze.b);
+	drawMountainDome(750.0f, 250.0f, 600.0f, 480.0f, farHaze.r, farHaze.g, farHaze.b);
+	drawMountainDome(1400.0f, 250.0f, 550.0f, 430.0f, farHaze.r, farHaze.g, farHaze.b);
+
+	// LAYER 2: Midground Tropical Green Mountains
+	Color3 midGreen = { 0.20f, 0.42f, 0.26f };
+	drawMountainDome(-50.0f, 220.0f, 450.0f, 350.0f, midGreen.r, midGreen.g, midGreen.b);
+	drawMountainDome(500.0f, 220.0f, 550.0f, 380.0f, midGreen.r, midGreen.g, midGreen.b);
+	drawMountainDome(1150.0f, 220.0f, 500.0f, 360.0f, midGreen.r, midGreen.g, midGreen.b);
+
+	// LAYER 3: Closer Sunny Lush Green Hills
+	Color3 closeGreen = { 0.28f, 0.52f, 0.22f };
+	drawMountainDome(220.0f, 200.0f, 480.0f, 280.0f, closeGreen.r, closeGreen.g, closeGreen.b);
+	drawMountainDome(850.0f, 200.0f, 520.0f, 310.0f, closeGreen.r, closeGreen.g, closeGreen.b);
+	drawMountainDome(1500.0f, 200.0f, 450.0f, 270.0f, closeGreen.r, closeGreen.g, closeGreen.b);
+
+	// LAYER 4: Valley Base (Warm Rice Paddy Green)
+	glColor3f(0.35f, 0.58f, 0.24f);
+	drawRect(0.0f, 0.0f, WIN_W, 250.0f);
+}
+//--------------------End(Hill)-------------------------------------------------
+
 void sun() {
 	glColor3f(1.0f, 0.85f, 0.0f);
 	drawCircle(520.0f, 520.0f, 40.0f, 40);
@@ -463,7 +528,26 @@ void drawGroundAndPath() {
 }
 
 void scene1() {
+	// 1. Sun
+	sun();
+
+	// 2. Tropical Soft Rolling Hills 
+	drawTropicalHills();
+
+	// 3. Valley Tree Clusters
+	drawTree(100.0f, 210.0f, 0.75f);
+	drawTree(180.0f, 215.0f, 0.85f);
+	drawTree(680.0f, 220.0f, 0.80f);
+	drawTree(760.0f, 215.0f, 0.90f);
+	drawTree(1250.0f, 210.0f, 0.85f);
+	drawTree(1350.0f, 220.0f, 0.75f);
+
+	// 4. Ground Path
 	drawGroundAndPath();
+
+	// 5. Foreground Trees
+	drawTree(70.0f, 80.0f, 1.2f);
+	drawTree(1500.0f, 75.0f, 1.3f);
 
 	// ================= FURTHEST ROW (Deep background) =================
 	// Placed highest up on the ground (Y: 210 - 225)
@@ -599,11 +683,12 @@ void scene1() {
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 	scene1();
-	glFlush();
-}
+  glFlush();
+};
 
 void init() {
-	glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+	// Soft sunny sky blue matching the photo
+	glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(0.0, WIN_W, 0.0, WIN_H);
