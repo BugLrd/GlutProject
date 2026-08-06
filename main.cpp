@@ -72,6 +72,87 @@ const HutColors HutColor4 = {{0.95f, 0.75f, 0.80f}, {0.20f, 0.55f, 0.50f},
 							 {0.35f, 0.15f, 0.35f}, {0.90f, 0.85f, 0.30f},
 							 {0.95f, 0.95f, 0.90f}, {0.30f, 0.15f, 0.20f},
 							 {0.55f, 0.55f, 0.55f}, {0.90f, 0.90f, 0.90f}};
+
+const HutColors HutColor5 = {{0.55f, 0.75f, 0.55f}, {0.35f, 0.45f, 0.25f},
+							 {0.30f, 0.18f, 0.10f}, {0.85f, 0.75f, 0.30f},
+							 {0.75f, 0.90f, 0.95f}, {0.20f, 0.25f, 0.15f},
+							 {0.40f, 0.40f, 0.35f}, {0.90f, 0.90f, 0.90f}};
+
+const HutColors HutColor6 = {{0.80f, 0.30f, 0.25f}, {0.30f, 0.30f, 0.32f},
+							 {0.20f, 0.15f, 0.15f}, {0.90f, 0.80f, 0.25f},
+							 {0.85f, 0.90f, 0.92f}, {0.15f, 0.15f, 0.18f},
+							 {0.40f, 0.42f, 0.44f}, {0.88f, 0.88f, 0.88f}};
+
+const HutColors HutColor7 = {{0.60f, 0.80f, 0.85f}, {0.90f, 0.90f, 0.90f},
+							 {0.25f, 0.35f, 0.45f}, {0.75f, 0.75f, 0.80f},
+							 {0.55f, 0.70f, 0.80f}, {0.15f, 0.20f, 0.25f},
+							 {0.65f, 0.65f, 0.65f}, {0.95f, 0.95f, 0.95f}};
+
+const HutColors HutColor8 = {{0.90f, 0.55f, 0.20f}, {0.55f, 0.20f, 0.15f},
+							 {0.30f, 0.12f, 0.08f}, {0.95f, 0.90f, 0.40f},
+							 {0.98f, 0.85f, 0.55f}, {0.25f, 0.10f, 0.05f},
+							 {0.45f, 0.30f, 0.28f}, {0.90f, 0.85f, 0.80f}};
+
+const HutColors HutColor9 = {{0.75f, 0.90f, 0.75f}, {0.85f, 0.40f, 0.55f},
+							 {0.40f, 0.25f, 0.35f}, {0.95f, 0.85f, 0.50f},
+							 {0.90f, 0.95f, 0.85f}, {0.30f, 0.20f, 0.25f},
+							 {0.60f, 0.55f, 0.60f}, {0.92f, 0.92f, 0.92f}};
+
+const HutColors HutColor10 = {{0.20f, 0.20f, 0.25f}, {0.10f, 0.10f, 0.15f},
+							  {0.05f, 0.05f, 0.08f}, {0.70f, 0.70f, 0.75f},
+							  {0.40f, 0.55f, 0.70f}, {0.08f, 0.08f, 0.10f},
+							  {0.25f, 0.25f, 0.28f}, {0.75f, 0.75f, 0.78f}};
+
+const HutColors HutColor11 = {{0.88f, 0.78f, 0.60f}, {0.45f, 0.25f, 0.20f},
+							  {0.28f, 0.16f, 0.10f}, {0.80f, 0.65f, 0.20f},
+							  {0.72f, 0.80f, 0.85f}, {0.25f, 0.18f, 0.12f},
+							  {0.50f, 0.48f, 0.45f}, {0.88f, 0.88f, 0.88f}};
+
+const HutColors HutColor12 = {{0.65f, 0.85f, 0.90f}, {0.95f, 0.60f, 0.30f},
+							  {0.30f, 0.30f, 0.35f}, {0.85f, 0.80f, 0.35f},
+							  {0.85f, 0.95f, 0.98f}, {0.20f, 0.22f, 0.28f},
+							  {0.60f, 0.60f, 0.62f}, {0.92f, 0.92f, 0.94f}};
+
+const HutColors HutColor13 = {{0.40f, 0.60f, 0.35f}, {0.55f, 0.25f, 0.20f},
+							  {0.25f, 0.15f, 0.08f}, {0.90f, 0.75f, 0.25f},
+							  {0.80f, 0.88f, 0.70f}, {0.15f, 0.18f, 0.10f},
+							  {0.45f, 0.40f, 0.35f}, {0.85f, 0.85f, 0.85f}};
+
+const HutColors HutColor14 = {{0.98f, 0.88f, 0.75f}, {0.70f, 0.40f, 0.60f},
+							  {0.35f, 0.20f, 0.30f}, {0.95f, 0.90f, 0.45f},
+							  {0.90f, 0.85f, 0.95f}, {0.28f, 0.20f, 0.25f},
+							  {0.55f, 0.50f, 0.55f}, {0.90f, 0.90f, 0.92f}};
+
+const HutColors HutColor15 = {{0.30f, 0.35f, 0.45f}, {0.85f, 0.85f, 0.90f},
+							  {0.15f, 0.15f, 0.20f}, {0.80f, 0.70f, 0.30f},
+							  {0.60f, 0.75f, 0.90f}, {0.10f, 0.10f, 0.15f},
+							  {0.55f, 0.58f, 0.60f}, {0.93f, 0.93f, 0.95f}};
+
+const HutColors HutColor16 = {{0.85f, 0.45f, 0.35f}, {0.40f, 0.55f, 0.30f},
+							  {0.30f, 0.20f, 0.15f}, {0.90f, 0.85f, 0.30f},
+							  {0.95f, 0.90f, 0.75f}, {0.22f, 0.18f, 0.12f},
+							  {0.48f, 0.45f, 0.40f}, {0.88f, 0.86f, 0.82f}};
+
+const HutColors HutColor17 = {{0.55f, 0.65f, 0.80f}, {0.25f, 0.25f, 0.30f},
+							  {0.35f, 0.25f, 0.40f}, {0.85f, 0.80f, 0.35f},
+							  {0.70f, 0.85f, 0.95f}, {0.18f, 0.15f, 0.22f},
+							  {0.42f, 0.40f, 0.48f}, {0.90f, 0.90f, 0.92f}};
+
+const HutColors HutColor18 = {{0.92f, 0.70f, 0.55f}, {0.60f, 0.35f, 0.25f},
+							  {0.32f, 0.18f, 0.12f}, {0.95f, 0.88f, 0.35f},
+							  {0.85f, 0.75f, 0.60f}, {0.28f, 0.16f, 0.10f},
+							  {0.50f, 0.42f, 0.35f}, {0.88f, 0.84f, 0.80f}};
+
+const HutColors HutColor19 = {{0.45f, 0.75f, 0.65f}, {0.65f, 0.30f, 0.40f},
+							  {0.25f, 0.28f, 0.22f}, {0.88f, 0.82f, 0.30f},
+							  {0.80f, 0.92f, 0.88f}, {0.18f, 0.22f, 0.18f},
+							  {0.42f, 0.48f, 0.44f}, {0.90f, 0.92f, 0.90f}};
+
+const HutColors HutColor20 = {{0.15f, 0.18f, 0.22f}, {0.55f, 0.15f, 0.15f},
+							  {0.08f, 0.08f, 0.10f}, {0.75f, 0.72f, 0.68f},
+							  {0.35f, 0.42f, 0.55f}, {0.05f, 0.05f, 0.08f},
+							  {0.30f, 0.30f, 0.32f}, {0.70f, 0.70f, 0.72f}};
+
 //---------------------------- end(hutcolors)----------------------------
 
 //-----------------------------HutDesigns-----------------------------
@@ -248,7 +329,107 @@ void hut3(HutColors colors) {
 	glEnd();
 }
 
-void hut4(HutColors colors) {}
+void hut4(HutColors colors) {
+	// A-Frame Cabin: A steep, prominent roof reaching low to the ground
+	// with a large triangular window matching the roof pitch.
+
+	// Chimney (drawn first so the roof overlaps it)
+	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+	drawRect(370.0f, 250.0f, 410.0f, 440.0f);
+
+	// Short base walls
+	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+	drawRect(200.0f, 150.0f, 400.0f, 200.0f);
+
+	// Massive A-frame roof
+	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+	drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
+
+	// Central door
+	glColor3f(colors.door.r, colors.door.g, colors.door.b);
+	drawRect(260.0f, 150.0f, 340.0f, 250.0f);
+
+	// Door knob
+	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
+	drawCircle(325.0f, 200.0f, 4.0f, 12);
+
+	// Large triangular window
+	glColor3f(colors.window.r, colors.window.g, colors.window.b);
+	drawTriangle(240.0f, 280.0f, 360.0f, 280.0f, 300.0f, 400.0f);
+
+	// Window frame (Y-shaped frame inside the triangle)
+	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+	glLineWidth(3.0f);
+	glBegin(GL_LINES);
+	// Vertical split
+	glVertex2f(300.0f, 280.0f);
+	glVertex2f(300.0f, 400.0f);
+	// Horizontal baseline
+	glVertex2f(240.0f, 280.0f);
+	glVertex2f(360.0f, 280.0f);
+	glEnd();
+}
+
+void hut5(HutColors colors) {
+	// Barn-style Hut: Features a classic Gambrel roof, wide double doors
+	// with cross bracing, and a high circular window.
+
+	// Chimney on the side
+	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+	drawRect(155.0f, 250.0f, 185.0f, 410.0f);
+
+	// Main walls
+	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+	drawRect(180.0f, 150.0f, 420.0f, 320.0f);
+
+	// Gambrel Roof using GL_POLYGON
+	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+	glBegin(GL_POLYGON);
+	glVertex2f(160.0f, 320.0f);
+	glVertex2f(200.0f, 420.0f);
+	glVertex2f(300.0f, 470.0f);
+	glVertex2f(400.0f, 420.0f);
+	glVertex2f(440.0f, 320.0f);
+	glEnd();
+
+	// Wide double barn doors
+	glColor3f(colors.door.r, colors.door.g, colors.door.b);
+	drawRect(240.0f, 150.0f, 360.0f, 270.0f);
+
+	// Door frames and X patterns for the barn look
+	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+	glLineWidth(2.0f);
+	glBegin(GL_LINES);
+	// Center split (separating the double doors)
+	glVertex2f(300.0f, 150.0f);
+	glVertex2f(300.0f, 270.0f);
+
+	// Left door X bracing
+	glVertex2f(240.0f, 150.0f);
+	glVertex2f(300.0f, 270.0f);
+	glVertex2f(240.0f, 270.0f);
+	glVertex2f(300.0f, 150.0f);
+
+	// Right door X bracing
+	glVertex2f(300.0f, 150.0f);
+	glVertex2f(360.0f, 270.0f);
+	glVertex2f(300.0f, 270.0f);
+	glVertex2f(360.0f, 150.0f);
+	glEnd();
+
+	// Circular Hayloft window
+	glColor3f(colors.window.r, colors.window.g, colors.window.b);
+	drawCircle(300.0f, 370.0f, 28.0f, 20);
+
+	// Window frame (cross)
+	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+	glBegin(GL_LINES);
+	glVertex2f(272.0f, 370.0f);
+	glVertex2f(328.0f, 370.0f);
+	glVertex2f(300.0f, 342.0f);
+	glVertex2f(300.0f, 398.0f);
+	glEnd();
+}
 
 //-----------------------------End(HutDesigns)-----------------------------
 
@@ -281,16 +462,143 @@ void drawGroundAndPath() {
 	glEnd();
 }
 
-void display() {
-	glClear(GL_COLOR_BUFFER_BIT);
+void scene1() {
+	drawGroundAndPath();
+
+	// ================= FURTHEST ROW (Deep background) =================
+	// Placed highest up on the ground (Y: 210 - 225)
+	// Drawn first so closer huts overlay them correctly.
 
 	glPushMatrix();
-	glTranslatef(280.0f, 380.0f, 0.0f);
-	glScalef(0.26f, 0.26f, 1.0f);
-	hut4(HutColor1); // default palette
+	glTranslatef(50.0f, 225.0f, 0.0f);
+	glScalef(0.24f, 0.27f, 1.0f);
+	hut3(HutColor7);
 	glPopMatrix();
 
-	drawGroundAndPath();
+	glPushMatrix();
+	glTranslatef(280.0f, 222.0f, 0.0f);
+	glScalef(0.28f, 0.25f, 1.0f);
+	hut1(HutColor14);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(520.0f, 220.0f, 0.0f);
+	glScalef(0.25f, 0.29f, 1.0f);
+	hut5(HutColor2);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(760.0f, 218.0f, 0.0f);
+	glScalef(0.27f, 0.24f, 1.0f);
+	hut2(HutColor19);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(990.0f, 215.0f, 0.0f);
+	glScalef(0.23f, 0.26f, 1.0f);
+	hut4(HutColor6);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(1220.0f, 212.0f, 0.0f);
+	glScalef(0.29f, 0.28f, 1.0f);
+	hut1(HutColor11);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(1450.0f, 210.0f, 0.0f);
+	glScalef(0.26f, 0.23f, 1.0f);
+	hut3(HutColor4);
+	glPopMatrix();
+
+	// ================= MIDDLE ROW =================
+	// Placed in the middle of the yard (Y: 175 - 190)
+	// X positions are staggered between the back row huts.
+
+	glPushMatrix();
+	glTranslatef(-10.0f, 190.0f, 0.0f);
+	glScalef(0.24f, 0.28f, 1.0f);
+	hut5(HutColor16);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(200.0f, 188.0f, 0.0f);
+	glScalef(0.28f, 0.26f, 1.0f);
+	hut2(HutColor9);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(420.0f, 185.0f, 0.0f);
+	glScalef(0.25f, 0.24f, 1.0f);
+	hut4(HutColor20);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(650.0f, 182.0f, 0.0f);
+	glScalef(0.27f, 0.29f, 1.0f);
+	hut1(HutColor5);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(880.0f, 180.0f, 0.0f);
+	glScalef(0.23f, 0.25f, 1.0f);
+	hut3(HutColor18);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(1100.0f, 178.0f, 0.0f);
+	glScalef(0.26f, 0.27f, 1.0f);
+	hut5(HutColor12);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(1340.0f, 175.0f, 0.0f);
+	glScalef(0.29f, 0.24f, 1.0f);
+	hut2(HutColor3);
+	glPopMatrix();
+
+	// ================= FRONT ROW (Just behind path) =================
+	// Placed closely behind the dirt road (Y: 130 - 150)
+
+	glPushMatrix();
+	glTranslatef(100.0f, 150.0f, 0.0f);
+	glScalef(0.24f, 0.26f, 1.0f);
+	hut4(HutColor15);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(340.0f, 145.0f, 0.0f);
+	glScalef(0.28f, 0.23f, 1.0f);
+	hut1(HutColor8);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(580.0f, 140.0f, 0.0f);
+	glScalef(0.25f, 0.28f, 1.0f);
+	hut3(HutColor17);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(820.0f, 135.0f, 0.0f);
+	glScalef(0.27f, 0.25f, 1.0f);
+	hut5(HutColor1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(1050.0f, 132.0f, 0.0f);
+	glScalef(0.23f, 0.29f, 1.0f);
+	hut2(HutColor13);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(1280.0f, 130.0f, 0.0f);
+	glScalef(0.26f, 0.24f, 1.0f);
+	hut4(HutColor10);
+	glPopMatrix();
+}
+void display() {
+	glClear(GL_COLOR_BUFFER_BIT);
+	scene1();
 	glFlush();
 }
 
