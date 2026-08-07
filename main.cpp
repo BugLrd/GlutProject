@@ -8,6 +8,7 @@
 #define WIN_H 1000
 #define PI 3.14159265358979323846
 
+//-------------------------------------------------------------------------------------SCENE1------------------------------------------------------------------------------------------------------
 // Toggled with 'n' (night) and 'd' (day) keys
 bool isNightMode = false;
 // Horizontal drift offset for the clouds, advanced each frame by update()
@@ -833,7 +834,8 @@ void scene1() {
 	drawTree(40.0f, 100.0f, 1.2f);
 	drawTree(1560.0f, 100.0f, 1.2f);
 }
-void display() {
+
+void renderScene1() {
 	if (isNightMode) {
 		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
 	} else {
@@ -844,6 +846,27 @@ void display() {
 	if (isNightMode) {
 		drawNightOverlay();
 	}
+}
+
+//---------------------------END OF SCENE1-------------------------
+
+//---------------------------SCENE2-------------------------
+void scene2() {
+	glPushMatrix();
+	glTranslatef(550.0f, 250.0f, 0.0f);
+	sun();
+	glPopMatrix();
+
+	drawClouds();
+
+	drawMountains();
+	drawHills();
+	drawGroundAndPath();
+}
+
+void display() {
+	glClear(GL_COLOR_BUFFER_BIT);
+	scene2();
 	glFlush();
 };
 
