@@ -8,6 +8,12 @@
 #define WIN_H 1000
 #define PI 3.14159265358979323846
 
+// Toggled with 'n' (night) and 'd' (day) keys
+bool isNightMode = false;
+// Horizontal drift offset for the clouds, advanced each frame by update()
+float cloudOffset = 0.0f;
+const float CLOUD_SPEED = 0.5f;
+
 //------------------------- Basic Drawing Helpers -------------------------
 void drawRect(float x1, float y1, float x2, float y2) {
 	glBegin(GL_QUADS);
@@ -261,35 +267,6 @@ void hut2(HutColors colors) {
 }
 
 void hut3(HutColors colors) {
-	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
-	drawRect(170.0f, 150.0f, 430.0f, 340.0f);
-
-	// Door knob
-	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
-	drawCircle(320.0f, 195.0f, 4.0f, 12);
-
-	// Round porthole windows with a cross frame
-	glColor3f(colors.window.r, colors.window.g, colors.window.b);
-	drawCircle(235.0f, 280.0f, 28.0f, 24);
-	drawCircle(365.0f, 280.0f, 28.0f, 24);
-
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	// Left window frame
-	glVertex2f(235.0f, 252.0f);
-	glVertex2f(235.0f, 308.0f);
-	glVertex2f(207.0f, 280.0f);
-	glVertex2f(263.0f, 280.0f);
-	// Right window frame
-	glVertex2f(365.0f, 252.0f);
-	glVertex2f(365.0f, 308.0f);
-	glVertex2f(337.0f, 280.0f);
-	glVertex2f(393.0f, 280.0f);
-	glEnd();
-}
-
-void hut3(HutColors colors) {
 	// A square, flat-roofed adobe-style hut with a stepped roofline
 	// and a small awning over the door.
 
@@ -426,8 +403,8 @@ void hut5(HutColors colors) {
 
 //-----------------------------End(HutDesigns)-----------------------------
 
-//------------------------- Trees, Edge Trees & Environment
-//-------------------------
+//------------------------- Trees, Edge Trees &
+// Environment-------------------------
 
 // Helper to draw a customizable pine tree
 void drawTree(float x, float y, float scale) {
@@ -596,9 +573,91 @@ void drawHills() {
 	drawTreeOnHillEdge(h3_cx, h3_cy, h3_rx, h3_ry, 145.0f, 0.20f);
 }
 
+// gosun
 void sun() {
 	glColor3f(1.0f, 0.85f, 0.0f);
 	drawCircle(520.0f, 520.0f, 40.0f, 40);
+}
+
+// Puffy cloud made from overlapping circles (shadow puffs + bright highlight
+// puffs)
+void drawCloud(float cx, float cy, float scale) {
+	// Soft grey base puffs give the cloud volume/shadow
+	glColor3f(0.85f, 0.87f, 0.90f);
+	drawCircle(cx, cy - 5.0f * scale, 30.0f * scale, 30);
+	drawCircle(cx + 30.0f * scale, cy, 36.0f * scale, 30);
+	drawCircle(cx + 65.0f * scale, cy - 5.0f * scale, 26.0f * scale, 30);
+	drawCircle(cx + 20.0f * scale, cy - 15.0f * scale, 24.0f * scale, 30);
+	drawCircle(cx + 50.0f * scale, cy - 15.0f * scale, 22.0f * scale, 30);
+
+	// Bright white highlight puffs on top for a fluffy look
+	glColor3f(1.0f, 1.0f, 1.0f);
+	drawCircle(cx, cy, 26.0f * scale, 30);
+	drawCircle(cx + 30.0f * scale, cy + 8.0f * scale, 32.0f * scale, 30);
+	drawCircle(cx + 62.0f * scale, cy, 22.0f * scale, 30);
+}
+
+// Scatters several clouds across the sky
+void drawClouds() {
+	static const float baseX[] = {120.0f, 430.0f,  700.0f,
+								  980.0f, 1250.0f, 1480.0f};
+	static const float baseY[] = {880.0f, 930.0f, 860.0f,
+								  910.0f, 870.0f, 920.0f};
+	static const float scale[] = {1.0f, 0.8f, 1.2f, 0.9f, 1.1f, 0.7f};
+	static const int numClouds = 6;
+
+	float wrapWidth = WIN_W + 400.0f;
+	float dx = fmodf(cloudOffset, wrapWidth);
+
+	for (int pass = 0; pass < 2; pass++) {
+		glPushMatrix();
+		glTranslatef(dx - pass * wrapWidth, 0.0f, 0.0f);
+		for (int i = 0; i < numClouds; i++) {
+			drawCloud(baseX[i], baseY[i], scale[i]);
+		}
+		glPopMatrix();
+	}
+}
+
+// gonight
+void drawNightOverlay() {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Dark blue translucent veil over the whole scene
+	glColor4f(0.02f, 0.02f, 0.15f, 0.55f);
+	glBegin(GL_QUADS);
+	glVertex2f(0.0f, 0.0f);
+	glVertex2f(WIN_W, 0.0f);
+	glVertex2f(WIN_W, WIN_H);
+	glVertex2f(0.0f, WIN_H);
+	glEnd();
+
+	// Stars scattered across the sky
+	glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
+	glPointSize(2.5f);
+	glBegin(GL_POINTS);
+	float starPositions[][2] = {
+		{80, 900},	 {150, 850},  {230, 920},  {310, 870},	{400, 940},
+		{480, 880},	 {560, 910},  {650, 860},  {730, 930},	{820, 890},
+		{900, 950},	 {980, 870},  {1060, 920}, {1150, 880}, {1230, 940},
+		{1310, 860}, {1400, 910}, {1480, 870}, {60, 780},	{200, 800},
+		{350, 760},	 {520, 790},  {700, 770},  {880, 800},	{1050, 760},
+		{1220, 790}, {1400, 770}, {1550, 800}, {120, 700},	{950, 700}};
+	int numStars = sizeof(starPositions) / sizeof(starPositions[0]);
+	for (int i = 0; i < numStars; i++) {
+		glVertex2f(starPositions[i][0], starPositions[i][1]);
+	}
+	glEnd();
+
+	// Moon, drawn over the sun's position
+	glColor4f(0.92f, 0.92f, 0.85f, 1.0f);
+	glPushMatrix();
+	glTranslatef(550.0f, 250.0f, 0.0f);
+	drawCircle(520.0f, 520.0f, 40.0f, 40);
+	glPopMatrix();
+
+	glDisable(GL_BLEND);
 }
 
 void drawGroundAndPath() {
@@ -630,6 +689,8 @@ void scene1() {
 	glTranslatef(550.0f, 250.0f, 0.0f);
 	sun();
 	glPopMatrix();
+
+	drawClouds();
 
 	drawMountains();
 	drawHills();
@@ -773,16 +834,34 @@ void scene1() {
 	drawTree(1560.0f, 100.0f, 1.2f);
 }
 void display() {
+	if (isNightMode) {
+		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
+	} else {
+		glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
+	}
 	glClear(GL_COLOR_BUFFER_BIT);
 	scene1();
+	if (isNightMode) {
+		drawNightOverlay();
+	}
 	glFlush();
 };
 
-void display() {
-	glClear(GL_COLOR_BUFFER_BIT);
-	scene1();
-	glFlush();
-};
+void update(int value) {
+	cloudOffset += CLOUD_SPEED;
+	glutPostRedisplay();
+	glutTimerFunc(16, update, 0);
+}
+
+void keyboard(unsigned char key, int x, int y) {
+	if (key == 'n' || key == 'N') {
+		isNightMode = true;
+		glutPostRedisplay();
+	} else if (key == 'd' || key == 'D') {
+		isNightMode = false;
+		glutPostRedisplay();
+	}
+}
 
 void init() {
 	// Soft sunny sky blue matching the photo
@@ -800,6 +879,8 @@ int main(int argc, char **argv) {
 	glutCreateWindow("GlutWindow");
 	init();
 	glutDisplayFunc(display);
+	glutKeyboardFunc(keyboard);
+	glutTimerFunc(16, update, 0);
 	glutMainLoop();
 	return 0;
 }
