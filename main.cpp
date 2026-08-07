@@ -264,6 +264,41 @@ void hut3(HutColors colors) {
 	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
 	drawRect(170.0f, 150.0f, 430.0f, 340.0f);
 
+	// Door knob
+	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
+	drawCircle(320.0f, 195.0f, 4.0f, 12);
+
+	// Round porthole windows with a cross frame
+	glColor3f(colors.window.r, colors.window.g, colors.window.b);
+	drawCircle(235.0f, 280.0f, 28.0f, 24);
+	drawCircle(365.0f, 280.0f, 28.0f, 24);
+
+	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+	glLineWidth(2.0f);
+	glBegin(GL_LINES);
+	// Left window frame
+	glVertex2f(235.0f, 252.0f);
+	glVertex2f(235.0f, 308.0f);
+	glVertex2f(207.0f, 280.0f);
+	glVertex2f(263.0f, 280.0f);
+	// Right window frame
+	glVertex2f(365.0f, 252.0f);
+	glVertex2f(365.0f, 308.0f);
+	glVertex2f(337.0f, 280.0f);
+	glVertex2f(393.0f, 280.0f);
+	glEnd();
+}
+
+void hut3(HutColors colors) {
+	// A square, flat-roofed adobe-style hut with a stepped roofline
+	// and a small awning over the door.
+
+	// Base walls (wide, squat rectangle)
+	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+	drawRect(170.0f, 150.0f, 430.0f, 340.0f);
+
+	// Stepped parapet roofline (flat roof look) drawn as a few offset
+	// rectangles
 	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
 	drawRect(150.0f, 340.0f, 450.0f, 365.0f);
 	drawRect(190.0f, 365.0f, 410.0f, 385.0f);
@@ -301,18 +336,30 @@ void hut4(HutColors colors) {
 	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
 	drawRect(370.0f, 250.0f, 410.0f, 440.0f);
 
+	// Chimney (drawn first so the roof overlaps it)
+	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+	drawRect(370.0f, 250.0f, 410.0f, 440.0f);
+
+	// Short base walls
 	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
 	drawRect(200.0f, 150.0f, 400.0f, 200.0f);
 
 	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
 	drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
 
+	// Massive A-frame roof
+	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+	drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
+
+	// Central door
 	glColor3f(colors.door.r, colors.door.g, colors.door.b);
 	drawRect(260.0f, 150.0f, 340.0f, 250.0f);
 
+	// Door knob
 	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
 	drawCircle(325.0f, 200.0f, 4.0f, 12);
 
+	// Large triangular window
 	glColor3f(colors.window.r, colors.window.g, colors.window.b);
 	drawTriangle(240.0f, 280.0f, 360.0f, 280.0f, 300.0f, 400.0f);
 
@@ -345,6 +392,11 @@ void hut5(HutColors colors) {
 	glColor3f(colors.door.r, colors.door.g, colors.door.b);
 	drawRect(240.0f, 150.0f, 360.0f, 270.0f);
 
+	// Wide double barn doors
+	glColor3f(colors.door.r, colors.door.g, colors.door.b);
+	drawRect(240.0f, 150.0f, 360.0f, 270.0f);
+
+	// Door frames and X patterns for the barn look
 	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
 	glLineWidth(2.0f);
 	glBegin(GL_LINES);
@@ -720,6 +772,11 @@ void scene1() {
 	drawTree(40.0f, 100.0f, 1.2f);
 	drawTree(1560.0f, 100.0f, 1.2f);
 }
+void display() {
+	glClear(GL_COLOR_BUFFER_BIT);
+	scene1();
+	glFlush();
+};
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
