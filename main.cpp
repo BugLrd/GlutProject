@@ -37,7 +37,8 @@ void drawCircle(float cx, float cy, float r, int segments) {
 }
 
 // Helper for smooth rounded mountain domes
-void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g, float b) {
+void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g,
+					  float b) {
 	glColor3f(r, g, b);
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex2f(cx, cy);
@@ -48,7 +49,8 @@ void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g, 
 	glEnd();
 }
 
-void drawHill(float cx, float cy, float rx, float ry, float r, float g, float b) {
+void drawHill(float cx, float cy, float rx, float ry, float r, float g,
+			  float b) {
 	glColor3f(r, g, b);
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex2f(cx, cy);
@@ -77,26 +79,86 @@ struct HutColors {
 //-------------------------End(Structs)---------------------------------------
 
 //-------------------------HutColors---------------------------------------
-const HutColors HutColor1 = { {0.85f, 0.65f, 0.45f}, {0.65f, 0.16f, 0.16f}, {0.40f, 0.22f, 0.10f}, {1.0f, 0.85f, 0.2f}, {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f}, {0.55f, 0.35f, 0.30f}, {0.85f, 0.85f, 0.85f} };
-const HutColors HutColor2 = { {0.93f, 0.87f, 0.70f}, {0.80f, 0.63f, 0.22f}, {0.35f, 0.20f, 0.08f}, {1.0f, 0.85f, 0.2f}, {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f}, {0.50f, 0.50f, 0.50f}, {0.85f, 0.85f, 0.85f} };
-const HutColors HutColor3 = { {0.96f, 0.96f, 0.94f}, {0.16f, 0.24f, 0.55f}, {0.70f, 0.15f, 0.15f}, {0.85f, 0.70f, 0.25f}, {0.90f, 0.92f, 0.60f}, {0.20f, 0.20f, 0.25f}, {0.45f, 0.45f, 0.48f}, {0.85f, 0.85f, 0.85f} };
-const HutColors HutColor4 = { {0.95f, 0.75f, 0.80f}, {0.20f, 0.55f, 0.50f}, {0.35f, 0.15f, 0.35f}, {0.90f, 0.85f, 0.30f}, {0.95f, 0.95f, 0.90f}, {0.30f, 0.15f, 0.20f}, {0.55f, 0.55f, 0.55f}, {0.90f, 0.90f, 0.90f} };
-const HutColors HutColor5 = { {0.55f, 0.75f, 0.55f}, {0.35f, 0.45f, 0.25f}, {0.30f, 0.18f, 0.10f}, {0.85f, 0.75f, 0.30f}, {0.75f, 0.90f, 0.95f}, {0.20f, 0.25f, 0.15f}, {0.40f, 0.40f, 0.35f}, {0.90f, 0.90f, 0.90f} };
-const HutColors HutColor6 = { {0.80f, 0.30f, 0.25f}, {0.30f, 0.30f, 0.32f}, {0.20f, 0.15f, 0.15f}, {0.90f, 0.80f, 0.25f}, {0.85f, 0.90f, 0.92f}, {0.15f, 0.15f, 0.18f}, {0.40f, 0.42f, 0.44f}, {0.88f, 0.88f, 0.88f} };
-const HutColors HutColor7 = { {0.60f, 0.80f, 0.85f}, {0.90f, 0.90f, 0.90f}, {0.25f, 0.35f, 0.45f}, {0.75f, 0.75f, 0.80f}, {0.55f, 0.70f, 0.80f}, {0.15f, 0.20f, 0.25f}, {0.65f, 0.65f, 0.65f}, {0.95f, 0.95f, 0.95f} };
-const HutColors HutColor8 = { {0.90f, 0.55f, 0.20f}, {0.55f, 0.20f, 0.15f}, {0.30f, 0.12f, 0.08f}, {0.95f, 0.90f, 0.40f}, {0.98f, 0.85f, 0.55f}, {0.25f, 0.10f, 0.05f}, {0.45f, 0.30f, 0.28f}, {0.90f, 0.85f, 0.80f} };
-const HutColors HutColor9 = { {0.75f, 0.90f, 0.75f}, {0.85f, 0.40f, 0.55f}, {0.40f, 0.25f, 0.35f}, {0.95f, 0.85f, 0.50f}, {0.90f, 0.95f, 0.85f}, {0.30f, 0.20f, 0.25f}, {0.60f, 0.55f, 0.60f}, {0.92f, 0.92f, 0.92f} };
-const HutColors HutColor10 = { {0.20f, 0.20f, 0.25f}, {0.10f, 0.10f, 0.15f}, {0.05f, 0.05f, 0.08f}, {0.70f, 0.70f, 0.75f}, {0.40f, 0.55f, 0.70f}, {0.08f, 0.08f, 0.10f}, {0.25f, 0.25f, 0.28f}, {0.75f, 0.75f, 0.78f} };
-const HutColors HutColor11 = { {0.88f, 0.78f, 0.60f}, {0.45f, 0.25f, 0.20f}, {0.28f, 0.16f, 0.10f}, {0.80f, 0.65f, 0.20f}, {0.72f, 0.80f, 0.85f}, {0.25f, 0.18f, 0.12f}, {0.50f, 0.48f, 0.45f}, {0.88f, 0.88f, 0.88f} };
-const HutColors HutColor12 = { {0.65f, 0.85f, 0.90f}, {0.95f, 0.60f, 0.30f}, {0.30f, 0.30f, 0.35f}, {0.85f, 0.80f, 0.35f}, {0.85f, 0.95f, 0.98f}, {0.20f, 0.22f, 0.28f}, {0.60f, 0.60f, 0.62f}, {0.92f, 0.92f, 0.94f} };
-const HutColors HutColor13 = { {0.40f, 0.60f, 0.35f}, {0.55f, 0.25f, 0.20f}, {0.25f, 0.15f, 0.08f}, {0.90f, 0.75f, 0.25f}, {0.80f, 0.88f, 0.70f}, {0.15f, 0.18f, 0.10f}, {0.45f, 0.40f, 0.35f}, {0.85f, 0.85f, 0.85f} };
-const HutColors HutColor14 = { {0.98f, 0.88f, 0.75f}, {0.70f, 0.40f, 0.60f}, {0.35f, 0.20f, 0.30f}, {0.95f, 0.90f, 0.45f}, {0.90f, 0.85f, 0.95f}, {0.28f, 0.20f, 0.25f}, {0.55f, 0.50f, 0.55f}, {0.90f, 0.90f, 0.92f} };
-const HutColors HutColor15 = { {0.30f, 0.35f, 0.45f}, {0.85f, 0.85f, 0.90f}, {0.15f, 0.15f, 0.20f}, {0.80f, 0.70f, 0.30f}, {0.60f, 0.75f, 0.90f}, {0.10f, 0.10f, 0.15f}, {0.55f, 0.58f, 0.60f}, {0.93f, 0.93f, 0.95f} };
-const HutColors HutColor16 = { {0.85f, 0.45f, 0.35f}, {0.40f, 0.55f, 0.30f}, {0.30f, 0.20f, 0.15f}, {0.90f, 0.85f, 0.30f}, {0.95f, 0.90f, 0.75f}, {0.22f, 0.18f, 0.12f}, {0.48f, 0.45f, 0.40f}, {0.88f, 0.86f, 0.82f} };
-const HutColors HutColor17 = { {0.55f, 0.65f, 0.80f}, {0.25f, 0.25f, 0.30f}, {0.35f, 0.25f, 0.40f}, {0.85f, 0.80f, 0.35f}, {0.70f, 0.85f, 0.95f}, {0.18f, 0.15f, 0.22f}, {0.42f, 0.40f, 0.48f}, {0.90f, 0.90f, 0.92f} };
-const HutColors HutColor18 = { {0.92f, 0.70f, 0.55f}, {0.60f, 0.35f, 0.25f}, {0.32f, 0.18f, 0.12f}, {0.95f, 0.88f, 0.35f}, {0.85f, 0.75f, 0.60f}, {0.28f, 0.16f, 0.10f}, {0.50f, 0.42f, 0.35f}, {0.88f, 0.84f, 0.80f} };
-const HutColors HutColor19 = { {0.45f, 0.75f, 0.65f}, {0.65f, 0.30f, 0.40f}, {0.25f, 0.28f, 0.22f}, {0.88f, 0.82f, 0.30f}, {0.80f, 0.92f, 0.88f}, {0.18f, 0.22f, 0.18f}, {0.42f, 0.48f, 0.44f}, {0.90f, 0.92f, 0.90f} };
-const HutColors HutColor20 = { {0.15f, 0.18f, 0.22f}, {0.55f, 0.15f, 0.15f}, {0.08f, 0.08f, 0.10f}, {0.75f, 0.72f, 0.68f}, {0.35f, 0.42f, 0.55f}, {0.05f, 0.05f, 0.08f}, {0.30f, 0.30f, 0.32f}, {0.70f, 0.70f, 0.72f} };
+const HutColors HutColor1 = {{0.85f, 0.65f, 0.45f}, {0.65f, 0.16f, 0.16f},
+							 {0.40f, 0.22f, 0.10f}, {1.0f, 0.85f, 0.2f},
+							 {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f},
+							 {0.55f, 0.35f, 0.30f}, {0.85f, 0.85f, 0.85f}};
+const HutColors HutColor2 = {{0.93f, 0.87f, 0.70f}, {0.80f, 0.63f, 0.22f},
+							 {0.35f, 0.20f, 0.08f}, {1.0f, 0.85f, 0.2f},
+							 {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f},
+							 {0.50f, 0.50f, 0.50f}, {0.85f, 0.85f, 0.85f}};
+const HutColors HutColor3 = {{0.96f, 0.96f, 0.94f}, {0.16f, 0.24f, 0.55f},
+							 {0.70f, 0.15f, 0.15f}, {0.85f, 0.70f, 0.25f},
+							 {0.90f, 0.92f, 0.60f}, {0.20f, 0.20f, 0.25f},
+							 {0.45f, 0.45f, 0.48f}, {0.85f, 0.85f, 0.85f}};
+const HutColors HutColor4 = {{0.95f, 0.75f, 0.80f}, {0.20f, 0.55f, 0.50f},
+							 {0.35f, 0.15f, 0.35f}, {0.90f, 0.85f, 0.30f},
+							 {0.95f, 0.95f, 0.90f}, {0.30f, 0.15f, 0.20f},
+							 {0.55f, 0.55f, 0.55f}, {0.90f, 0.90f, 0.90f}};
+const HutColors HutColor5 = {{0.55f, 0.75f, 0.55f}, {0.35f, 0.45f, 0.25f},
+							 {0.30f, 0.18f, 0.10f}, {0.85f, 0.75f, 0.30f},
+							 {0.75f, 0.90f, 0.95f}, {0.20f, 0.25f, 0.15f},
+							 {0.40f, 0.40f, 0.35f}, {0.90f, 0.90f, 0.90f}};
+const HutColors HutColor6 = {{0.80f, 0.30f, 0.25f}, {0.30f, 0.30f, 0.32f},
+							 {0.20f, 0.15f, 0.15f}, {0.90f, 0.80f, 0.25f},
+							 {0.85f, 0.90f, 0.92f}, {0.15f, 0.15f, 0.18f},
+							 {0.40f, 0.42f, 0.44f}, {0.88f, 0.88f, 0.88f}};
+const HutColors HutColor7 = {{0.60f, 0.80f, 0.85f}, {0.90f, 0.90f, 0.90f},
+							 {0.25f, 0.35f, 0.45f}, {0.75f, 0.75f, 0.80f},
+							 {0.55f, 0.70f, 0.80f}, {0.15f, 0.20f, 0.25f},
+							 {0.65f, 0.65f, 0.65f}, {0.95f, 0.95f, 0.95f}};
+const HutColors HutColor8 = {{0.90f, 0.55f, 0.20f}, {0.55f, 0.20f, 0.15f},
+							 {0.30f, 0.12f, 0.08f}, {0.95f, 0.90f, 0.40f},
+							 {0.98f, 0.85f, 0.55f}, {0.25f, 0.10f, 0.05f},
+							 {0.45f, 0.30f, 0.28f}, {0.90f, 0.85f, 0.80f}};
+const HutColors HutColor9 = {{0.75f, 0.90f, 0.75f}, {0.85f, 0.40f, 0.55f},
+							 {0.40f, 0.25f, 0.35f}, {0.95f, 0.85f, 0.50f},
+							 {0.90f, 0.95f, 0.85f}, {0.30f, 0.20f, 0.25f},
+							 {0.60f, 0.55f, 0.60f}, {0.92f, 0.92f, 0.92f}};
+const HutColors HutColor10 = {{0.20f, 0.20f, 0.25f}, {0.10f, 0.10f, 0.15f},
+							  {0.05f, 0.05f, 0.08f}, {0.70f, 0.70f, 0.75f},
+							  {0.40f, 0.55f, 0.70f}, {0.08f, 0.08f, 0.10f},
+							  {0.25f, 0.25f, 0.28f}, {0.75f, 0.75f, 0.78f}};
+const HutColors HutColor11 = {{0.88f, 0.78f, 0.60f}, {0.45f, 0.25f, 0.20f},
+							  {0.28f, 0.16f, 0.10f}, {0.80f, 0.65f, 0.20f},
+							  {0.72f, 0.80f, 0.85f}, {0.25f, 0.18f, 0.12f},
+							  {0.50f, 0.48f, 0.45f}, {0.88f, 0.88f, 0.88f}};
+const HutColors HutColor12 = {{0.65f, 0.85f, 0.90f}, {0.95f, 0.60f, 0.30f},
+							  {0.30f, 0.30f, 0.35f}, {0.85f, 0.80f, 0.35f},
+							  {0.85f, 0.95f, 0.98f}, {0.20f, 0.22f, 0.28f},
+							  {0.60f, 0.60f, 0.62f}, {0.92f, 0.92f, 0.94f}};
+const HutColors HutColor13 = {{0.40f, 0.60f, 0.35f}, {0.55f, 0.25f, 0.20f},
+							  {0.25f, 0.15f, 0.08f}, {0.90f, 0.75f, 0.25f},
+							  {0.80f, 0.88f, 0.70f}, {0.15f, 0.18f, 0.10f},
+							  {0.45f, 0.40f, 0.35f}, {0.85f, 0.85f, 0.85f}};
+const HutColors HutColor14 = {{0.98f, 0.88f, 0.75f}, {0.70f, 0.40f, 0.60f},
+							  {0.35f, 0.20f, 0.30f}, {0.95f, 0.90f, 0.45f},
+							  {0.90f, 0.85f, 0.95f}, {0.28f, 0.20f, 0.25f},
+							  {0.55f, 0.50f, 0.55f}, {0.90f, 0.90f, 0.92f}};
+const HutColors HutColor15 = {{0.30f, 0.35f, 0.45f}, {0.85f, 0.85f, 0.90f},
+							  {0.15f, 0.15f, 0.20f}, {0.80f, 0.70f, 0.30f},
+							  {0.60f, 0.75f, 0.90f}, {0.10f, 0.10f, 0.15f},
+							  {0.55f, 0.58f, 0.60f}, {0.93f, 0.93f, 0.95f}};
+const HutColors HutColor16 = {{0.85f, 0.45f, 0.35f}, {0.40f, 0.55f, 0.30f},
+							  {0.30f, 0.20f, 0.15f}, {0.90f, 0.85f, 0.30f},
+							  {0.95f, 0.90f, 0.75f}, {0.22f, 0.18f, 0.12f},
+							  {0.48f, 0.45f, 0.40f}, {0.88f, 0.86f, 0.82f}};
+const HutColors HutColor17 = {{0.55f, 0.65f, 0.80f}, {0.25f, 0.25f, 0.30f},
+							  {0.35f, 0.25f, 0.40f}, {0.85f, 0.80f, 0.35f},
+							  {0.70f, 0.85f, 0.95f}, {0.18f, 0.15f, 0.22f},
+							  {0.42f, 0.40f, 0.48f}, {0.90f, 0.90f, 0.92f}};
+const HutColors HutColor18 = {{0.92f, 0.70f, 0.55f}, {0.60f, 0.35f, 0.25f},
+							  {0.32f, 0.18f, 0.12f}, {0.95f, 0.88f, 0.35f},
+							  {0.85f, 0.75f, 0.60f}, {0.28f, 0.16f, 0.10f},
+							  {0.50f, 0.42f, 0.35f}, {0.88f, 0.84f, 0.80f}};
+const HutColors HutColor19 = {{0.45f, 0.75f, 0.65f}, {0.65f, 0.30f, 0.40f},
+							  {0.25f, 0.28f, 0.22f}, {0.88f, 0.82f, 0.30f},
+							  {0.80f, 0.92f, 0.88f}, {0.18f, 0.22f, 0.18f},
+							  {0.42f, 0.48f, 0.44f}, {0.90f, 0.92f, 0.90f}};
+const HutColors HutColor20 = {{0.15f, 0.18f, 0.22f}, {0.55f, 0.15f, 0.15f},
+							  {0.08f, 0.08f, 0.10f}, {0.75f, 0.72f, 0.68f},
+							  {0.35f, 0.42f, 0.55f}, {0.05f, 0.05f, 0.08f},
+							  {0.30f, 0.30f, 0.32f}, {0.70f, 0.70f, 0.72f}};
 
 //---------------------------- end(hutcolors)----------------------------
 
@@ -125,10 +187,14 @@ void hut1(HutColors colors) {
 	glLineWidth(2.0f);
 
 	glBegin(GL_LINES);
-	glVertex2f(235.0f, 270.0f); glVertex2f(235.0f, 320.0f);
-	glVertex2f(210.0f, 295.0f); glVertex2f(260.0f, 295.0f);
-	glVertex2f(365.0f, 270.0f); glVertex2f(365.0f, 320.0f);
-	glVertex2f(340.0f, 295.0f); glVertex2f(390.0f, 295.0f);
+	glVertex2f(235.0f, 270.0f);
+	glVertex2f(235.0f, 320.0f);
+	glVertex2f(210.0f, 295.0f);
+	glVertex2f(260.0f, 295.0f);
+	glVertex2f(365.0f, 270.0f);
+	glVertex2f(365.0f, 320.0f);
+	glVertex2f(340.0f, 295.0f);
+	glVertex2f(390.0f, 295.0f);
 	glEnd();
 }
 
@@ -147,7 +213,8 @@ void hut2(HutColors colors) {
 	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
 	drawTriangle(160.0f, 370.0f, 440.0f, 370.0f, 300.0f, 500.0f);
 
-	glColor3f(colors.roof.r * 0.75f, colors.roof.g * 0.75f, colors.roof.b * 0.75f);
+	glColor3f(colors.roof.r * 0.75f, colors.roof.g * 0.75f,
+			  colors.roof.b * 0.75f);
 	glLineWidth(2.0f);
 	glBegin(GL_LINES);
 	for (int i = 1; i <= 4; i++) {
@@ -182,10 +249,14 @@ void hut2(HutColors colors) {
 	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
 	glLineWidth(2.0f);
 	glBegin(GL_LINES);
-	glVertex2f(235.0f, 252.0f); glVertex2f(235.0f, 308.0f);
-	glVertex2f(207.0f, 280.0f); glVertex2f(263.0f, 280.0f);
-	glVertex2f(365.0f, 252.0f); glVertex2f(365.0f, 308.0f);
-	glVertex2f(337.0f, 280.0f); glVertex2f(393.0f, 280.0f);
+	glVertex2f(235.0f, 252.0f);
+	glVertex2f(235.0f, 308.0f);
+	glVertex2f(207.0f, 280.0f);
+	glVertex2f(263.0f, 280.0f);
+	glVertex2f(365.0f, 252.0f);
+	glVertex2f(365.0f, 308.0f);
+	glVertex2f(337.0f, 280.0f);
+	glVertex2f(393.0f, 280.0f);
 	glEnd();
 }
 
@@ -201,7 +272,8 @@ void hut3(HutColors colors) {
 	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
 	drawRect(320.0f, 400.0f, 350.0f, 460.0f);
 
-	glColor3f(colors.roof.r * 0.85f, colors.roof.g * 0.85f, colors.roof.b * 0.85f);
+	glColor3f(colors.roof.r * 0.85f, colors.roof.g * 0.85f,
+			  colors.roof.b * 0.85f);
 	drawTriangle(255.0f, 250.0f, 345.0f, 250.0f, 300.0f, 290.0f);
 
 	glColor3f(colors.door.r, colors.door.g, colors.door.b);
@@ -216,9 +288,12 @@ void hut3(HutColors colors) {
 	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
 	glLineWidth(2.0f);
 	glBegin(GL_LINES);
-	glVertex2f(266.0f, 260.0f); glVertex2f(266.0f, 310.0f);
-	glVertex2f(333.0f, 260.0f); glVertex2f(333.0f, 310.0f);
-	glVertex2f(200.0f, 285.0f); glVertex2f(400.0f, 285.0f);
+	glVertex2f(266.0f, 260.0f);
+	glVertex2f(266.0f, 310.0f);
+	glVertex2f(333.0f, 260.0f);
+	glVertex2f(333.0f, 310.0f);
+	glVertex2f(200.0f, 285.0f);
+	glVertex2f(400.0f, 285.0f);
 	glEnd();
 }
 
@@ -244,8 +319,10 @@ void hut4(HutColors colors) {
 	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
 	glLineWidth(3.0f);
 	glBegin(GL_LINES);
-	glVertex2f(300.0f, 280.0f); glVertex2f(300.0f, 400.0f);
-	glVertex2f(240.0f, 280.0f); glVertex2f(360.0f, 280.0f);
+	glVertex2f(300.0f, 280.0f);
+	glVertex2f(300.0f, 400.0f);
+	glVertex2f(240.0f, 280.0f);
+	glVertex2f(360.0f, 280.0f);
 	glEnd();
 }
 
@@ -271,11 +348,16 @@ void hut5(HutColors colors) {
 	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
 	glLineWidth(2.0f);
 	glBegin(GL_LINES);
-	glVertex2f(300.0f, 150.0f); glVertex2f(300.0f, 270.0f);
-	glVertex2f(240.0f, 150.0f); glVertex2f(300.0f, 270.0f);
-	glVertex2f(240.0f, 270.0f); glVertex2f(300.0f, 150.0f);
-	glVertex2f(300.0f, 150.0f); glVertex2f(360.0f, 270.0f);
-	glVertex2f(300.0f, 270.0f); glVertex2f(360.0f, 150.0f);
+	glVertex2f(300.0f, 150.0f);
+	glVertex2f(300.0f, 270.0f);
+	glVertex2f(240.0f, 150.0f);
+	glVertex2f(300.0f, 270.0f);
+	glVertex2f(240.0f, 270.0f);
+	glVertex2f(300.0f, 150.0f);
+	glVertex2f(300.0f, 150.0f);
+	glVertex2f(360.0f, 270.0f);
+	glVertex2f(300.0f, 270.0f);
+	glVertex2f(360.0f, 150.0f);
 	glEnd();
 
 	glColor3f(colors.window.r, colors.window.g, colors.window.b);
@@ -283,14 +365,17 @@ void hut5(HutColors colors) {
 
 	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
 	glBegin(GL_LINES);
-	glVertex2f(272.0f, 370.0f); glVertex2f(328.0f, 370.0f);
-	glVertex2f(300.0f, 342.0f); glVertex2f(300.0f, 398.0f);
+	glVertex2f(272.0f, 370.0f);
+	glVertex2f(328.0f, 370.0f);
+	glVertex2f(300.0f, 342.0f);
+	glVertex2f(300.0f, 398.0f);
 	glEnd();
 }
 
 //-----------------------------End(HutDesigns)-----------------------------
 
-//------------------------- Trees, Edge Trees & Environment -------------------------
+//------------------------- Trees, Edge Trees & Environment
+//-------------------------
 
 // Helper to draw a customizable pine tree
 void drawTree(float x, float y, float scale) {
@@ -352,8 +437,10 @@ void drawTinyTree(float x, float y, float scale) {
 	glPopMatrix();
 }
 
-// Automatically snaps a tiny tree exactly onto the outer curve of a hill ellipse
-void drawTreeOnHillEdge(float cx, float cy, float rx, float ry, float angleDegrees, float scale) {
+// Automatically snaps a tiny tree exactly onto the outer curve of a hill
+// ellipse
+void drawTreeOnHillEdge(float cx, float cy, float rx, float ry,
+						float angleDegrees, float scale) {
 	float rad = angleDegrees * (float)PI / 180.0f;
 	float x = cx + rx * cosf(rad);
 	float y = cy + ry * sinf(rad);
@@ -365,8 +452,8 @@ void drawMountains() {
 	glPushMatrix();
 	glTranslatef(0.0f, -120.0f, 0.0f);
 
-	Color3 litGreen = { 0.32f, 0.58f, 0.23f };
-	Color3 shadowGreen = { 0.16f, 0.34f, 0.14f };
+	Color3 litGreen = {0.32f, 0.58f, 0.23f};
+	Color3 shadowGreen = {0.16f, 0.34f, 0.14f};
 
 	// --- 1. LEFT MOUNTAIN ---
 	glColor3f(litGreen.r, litGreen.g, litGreen.b);
@@ -437,10 +524,6 @@ void drawHills() {
 	drawTreeOnHillEdge(h2_cx, h2_cy, h2_rx, h2_ry, 112.0f, 0.25f);
 	drawTreeOnHillEdge(h2_cx, h2_cy, h2_rx, h2_ry, 115.0f, 0.25f);
 
-
-
-
-
 	// 3. Front Center Rolling Hill
 	float h3_cx = 800.0f, h3_cy = 220.0f, h3_rx = 500.0f, h3_ry = 200.0f;
 	drawHill(h3_cx, h3_cy, h3_rx, h3_ry, 0.28f, 0.52f, 0.22f);
@@ -459,8 +542,6 @@ void drawHills() {
 	drawTreeOnHillEdge(h3_cx, h3_cy, h3_rx, h3_ry, 105.0f, 0.21f);
 	drawTreeOnHillEdge(h3_cx, h3_cy, h3_rx, h3_ry, 125.0f, 0.23f);
 	drawTreeOnHillEdge(h3_cx, h3_cy, h3_rx, h3_ry, 145.0f, 0.20f);
-
-
 }
 
 void sun() {
@@ -502,17 +583,14 @@ void scene1() {
 	drawHills();
 	drawGroundAndPath();
 
-	// ================= BACKGROUND TREES (Shifted up onto hills behind back row huts) =================
+	// ================= BACKGROUND TREES (Shifted up onto hills behind back row
+	// huts) =================
 	drawTree(160.0f, 285.0f, 0.70f);
 	drawTree(400.0f, 280.0f, 0.75f);
 	drawTree(640.0f, 285.0f, 0.70f);
 	drawTree(870.0f, 280.0f, 0.75f);
 	drawTree(1110.0f, 285.0f, 0.70f);
 	drawTree(1340.0f, 280.0f, 0.75f);
-
-	// ================= FOREGROUND TREES (Moved to outer margins to frame the scene) =================
-	drawTree(20.0f, 75.0f, 1.2f);
-	drawTree(1580.0f, 75.0f, 1.2f);
 
 	// ================= FURTHEST ROW (Deep background) =================
 	glPushMatrix();
@@ -636,6 +714,11 @@ void scene1() {
 	glScalef(0.26f, 0.24f, 1.0f);
 	hut4(HutColor10);
 	glPopMatrix();
+
+	// ================= FOREGROUND TREES (Moved to outer margins to frame the
+	// scene) =================
+	drawTree(40.0f, 100.0f, 1.2f);
+	drawTree(1560.0f, 100.0f, 1.2f);
 }
 
 void display() {
@@ -653,7 +736,7 @@ void init() {
 	glMatrixMode(GL_MODELVIEW);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowSize(WIN_W, WIN_H);
