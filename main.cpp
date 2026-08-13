@@ -2,6 +2,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
+#include <algorithm>
 #include <math.h>
 
 #define WIN_W 1600
@@ -19,6 +20,8 @@ const float CLOUD_SPEED = 0.5f;
 float firePhase = 0.0f;
 const float FIRE_SPEED = 0.12f;
 const float SMOKE_DRIFT_SPEED = 0.25f;
+// Drift accumulator for rising/swaying smoke puffs in Scene 2
+float smokeOffset = 0.0f;
 
 //------------------------- Basic Drawing Helpers -------------------------
 void drawRect(float x1, float y1, float x2, float y2) {
@@ -857,215 +860,734 @@ void renderScene1() {
 
 //---------------------------SCENE2-------------------------
 // ------------------- Bombed-Village Helper Drawings -------------------
+//
+// Scene 2 reuses Scene 1's sky/sun/cloud/mountain/hill helpers but adds a
+// large library of small, reusable, parameterized drawing functions for
+// destruction: burn marks, craters, bricks, rubble, wood debris, roof
+// debris, metal/glass shards, broken houses, burnt trees, fire and smoke.
+// Every function below accepts position/scale (and color where sensible)
+// so the same visual element can be reused many times with variation.
 
-// A dark, puffy smoke cloud (drifting across the background sky)
-void drawSmokeCloud(float cx, float cy, float scale) {
-	glColor4f(0.25f, 0.23f, 0.22f, 0.65f);
-	drawCircle(cx, cy - 5.0f * scale, 30.0f * scale, 24);
-	drawCircle(cx + 30.0f * scale, cy, 36.0f * scale, 24);
-	drawCircle(cx + 65.0f * scale, cy - 5.0f * scale, 26.0f * scale, 24);
-	glColor4f(0.40f, 0.38f, 0.36f, 0.55f);
-	drawCircle(cx, cy, 26.0f * scale, 24);
-	drawCircle(cx + 30.0f * scale, cy + 8.0f * scale, 32.0f * scale, 24);
+// ---------------------- Colors ----------------------
+const Color3 BurntBlack = {0.05f, 0.05f, 0.05f};
+const Color3 Charcoal = {0.14f, 0.13f, 0.12f};
+const Color3 CharcoalLight = {0.26f, 0.24f, 0.22f};
+const Color3 AshGray = {0.55f, 0.53f, 0.50f};
+const Color3 BrickRed = {0.55f, 0.20f, 0.15f};
+const Color3 BrickBrown = {0.45f, 0.28f, 0.16f};
+const Color3 BrickOrange = {0.62f, 0.34f, 0.18f};
+const Color3 BurntWood = {0.22f, 0.15f, 0.09f};
+const Color3 WoodBrown = {0.42f, 0.27f, 0.14f};
+const Color3 WoodBrownLight = {0.55f, 0.38f, 0.20f};
+const Color3 MetalGray = {0.45f, 0.48f, 0.50f};
+const Color3 GlassBlue = {0.42f, 0.58f, 0.66f};
+const Color3 RoofDarkRed = {0.42f, 0.16f, 0.14f};
+const Color3 RoofGray = {0.34f, 0.34f, 0.36f};
+const Color3 DustyGreen = {0.34f, 0.42f, 0.24f};
+const Color3 DirtBrown = {0.40f, 0.30f, 0.20f};
+const Color3 DamagedWall = {0.58f, 0.52f, 0.44f};
+const Color3 DamagedWallDark = {0.40f, 0.36f, 0.30f};
+const Color3 EmberYellow = {1.0f, 0.80f, 0.20f};
+const Color3 EmberOrange = {0.95f, 0.45f, 0.10f};
+const Color3 EmberRed = {0.80f, 0.15f, 0.10f};
+
+// ---------------------- Generic irregular blob helper ----------------------
+// Draws an organic, jagged polygon (used for burn marks, craters and rubble)
+// instead of a perfect circle. `seed` shifts the wobble pattern so repeated
+// calls with different seeds don't all look identical.
+void drawIrregularBlob(float cx, float cy, float rx, float ry, int segments,
+					   float seed, Color3 color) {
+	glColor3f(color.r, color.g, color.b);
+	glBegin(GL_POLYGON);
+	for (int i = 0; i < segments; i++) {
+		float angle = 2.0f * (float)PI * i / segments;
+		float wobble = 1.0f + 0.28f * sinf(angle * 3.0f + seed) +
+					   0.15f * cosf(angle * 5.0f + seed * 1.7f);
+		glVertex2f(cx + rx * wobble * cosf(angle),
+				   cy + ry * wobble * sinf(angle));
+	}
+	glEnd();
 }
 
-// Drifting bank of smoke clouds across the sky, looping the same way
-// drawClouds() does (two copies offset by wrapWidth for a seamless scroll).
-void drawBackgroundSmokeClouds() {
-	static const float baseX[] = {80.0f, 380.0f, 680.0f, 980.0f, 1280.0f};
-	static const float baseY[] = {860.0f, 900.0f, 850.0f, 890.0f, 870.0f};
-	static const float scale[] = {1.1f, 0.9f, 1.3f, 1.0f, 0.8f};
-	static const int numSmoke = 5;
+// ---------------------- Burn Marks ----------------------
+void drawBurnMarkSmall(float x, float y, float scale, Color3 color) {
+	drawIrregularBlob(x, y, 35.0f * scale, 16.0f * scale, 10,
+					  x * 0.13f + y * 0.07f, color);
+}
 
+void drawBurnMarkMedium(float x, float y, float scale, Color3 color) {
+	drawIrregularBlob(x, y, 65.0f * scale, 28.0f * scale, 12,
+					  x * 0.09f + y * 0.11f, color);
+	Color3 inner = {color.r * 1.4f, color.g * 1.4f, color.b * 1.4f};
+	drawIrregularBlob(x, y, 36.0f * scale, 15.0f * scale, 10,
+					  x * 0.2f + y * 0.05f, inner);
+}
+
+void drawBurnMarkLarge(float x, float y, float scale, Color3 color) {
+	drawIrregularBlob(x, y, 110.0f * scale, 46.0f * scale, 14,
+					  x * 0.05f + y * 0.13f, color);
+	Color3 mid = {color.r * 1.3f, color.g * 1.3f, color.b * 1.3f};
+	drawIrregularBlob(x, y, 68.0f * scale, 28.0f * scale, 12,
+					  x * 0.17f + y * 0.08f, mid);
+	Color3 inner = {color.r * 1.6f, color.g * 1.6f, color.b * 1.6f};
+	drawIrregularBlob(x, y, 34.0f * scale, 14.0f * scale, 10,
+					  x * 0.24f + y * 0.02f, inner);
+}
+
+// ---------------------- Craters ----------------------
+void drawCraterSmall(float x, float y, float scale) {
+	// Lighter disturbed-earth rim, then a dark pit on top
+	drawIrregularBlob(x, y, 26.0f * scale, 18.0f * scale, 10, x * 0.31f,
+					  DirtBrown);
+	drawIrregularBlob(x, y, 14.0f * scale, 10.0f * scale, 10, x * 0.19f + 3.0f,
+					  Charcoal);
+}
+
+void drawCraterLarge(float x, float y, float scale) {
+	Color3 rim = {DirtBrown.r * 1.15f, DirtBrown.g * 1.1f, DirtBrown.b * 1.1f};
+	drawIrregularBlob(x, y, 55.0f * scale, 38.0f * scale, 14, x * 0.11f, rim);
+	drawIrregularBlob(x, y, 38.0f * scale, 25.0f * scale, 12, x * 0.22f + 2.0f,
+					  DirtBrown);
+	drawIrregularBlob(x, y, 20.0f * scale, 12.0f * scale, 10, x * 0.33f + 4.0f,
+					  BurntBlack);
+}
+
+// ---------------------- Bricks ----------------------
+void drawBrick(float x, float y, float w, float h, float rotation,
+			   Color3 color) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+	glColor3f(color.r, color.g, color.b);
+	drawRect(-w * 0.5f, -h * 0.5f, w * 0.5f, h * 0.5f);
+	glColor3f(color.r * 0.55f, color.g * 0.55f, color.b * 0.55f);
+	glLineWidth(1.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex2f(-w * 0.5f, -h * 0.5f);
+	glVertex2f(w * 0.5f, -h * 0.5f);
+	glVertex2f(w * 0.5f, h * 0.5f);
+	glVertex2f(-w * 0.5f, h * 0.5f);
+	glEnd();
+	glPopMatrix();
+}
+
+// A small heap of a few loosely scattered bricks
+void drawBrickPileSmall(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+	drawBrick(-14.0f, 4.0f, 26.0f, 12.0f, -6.0f, BrickRed);
+	drawBrick(10.0f, 2.0f, 24.0f, 11.0f, 8.0f, BrickBrown);
+	drawBrick(-2.0f, 14.0f, 22.0f, 10.0f, 3.0f, BrickOrange);
+	drawBrick(20.0f, 12.0f, 20.0f, 10.0f, -10.0f, BrickRed);
+	glPopMatrix();
+}
+
+// A larger, stacked pile of bricks with multiple layers
+void drawBrickPileLarge(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+	// Base layer, scattered
+	drawBrick(-40.0f, 4.0f, 30.0f, 13.0f, -4.0f, BrickBrown);
+	drawBrick(-8.0f, 3.0f, 32.0f, 13.0f, 5.0f, BrickRed);
+	drawBrick(26.0f, 5.0f, 28.0f, 12.0f, -8.0f, BrickOrange);
+	drawBrick(52.0f, 2.0f, 26.0f, 12.0f, 10.0f, BrickRed);
+	// Second, partially stacked layer
+	drawBrick(-22.0f, 18.0f, 28.0f, 12.0f, 6.0f, BrickRed);
+	drawBrick(6.0f, 20.0f, 26.0f, 12.0f, -5.0f, BrickBrown);
+	drawBrick(34.0f, 17.0f, 24.0f, 11.0f, 9.0f, BrickOrange);
+	// Top, loosely scattered pieces
+	drawBrick(-6.0f, 34.0f, 22.0f, 10.0f, -12.0f, BrickBrown);
+	drawBrick(18.0f, 33.0f, 20.0f, 9.0f, 4.0f, BrickRed);
+	glPopMatrix();
+}
+
+// ---------------------- Rubble ----------------------
+void drawRubblePile(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+	drawIrregularBlob(0.0f, 6.0f, 30.0f, 14.0f, 10, x * 0.1f, AshGray);
+	drawIrregularBlob(-14.0f, 4.0f, 14.0f, 9.0f, 8, x * 0.2f + 1.0f,
+					  CharcoalLight);
+	drawIrregularBlob(16.0f, 10.0f, 12.0f, 8.0f, 8, x * 0.15f + 2.0f,
+					  DirtBrown);
+	drawBrick(2.0f, 14.0f, 16.0f, 8.0f, 12.0f, BrickBrown);
+	drawBrick(-10.0f, 18.0f, 14.0f, 7.0f, -8.0f, BrickRed);
+	glPopMatrix();
+}
+
+// ---------------------- Wooden Debris ----------------------
+void drawWoodPlank(float x, float y, float length, float thickness,
+				   float rotation, Color3 color) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+	glColor3f(color.r, color.g, color.b);
+	drawRect(-length * 0.5f, -thickness * 0.5f, length * 0.5f,
+			 thickness * 0.5f);
+	glColor3f(color.r * 0.65f, color.g * 0.65f, color.b * 0.65f);
+	glLineWidth(1.0f);
+	glBegin(GL_LINES);
+	glVertex2f(-length * 0.2f, -thickness * 0.5f);
+	glVertex2f(-length * 0.2f, thickness * 0.5f);
+	glVertex2f(length * 0.25f, -thickness * 0.5f);
+	glVertex2f(length * 0.25f, thickness * 0.5f);
+	glEnd();
+	glPopMatrix();
+}
+
+// A wood beam with a jagged, snapped-off end
+void drawBrokenBeam(float x, float y, float length, float thickness,
+					float rotation, Color3 color) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+	glColor3f(color.r, color.g, color.b);
+	glBegin(GL_POLYGON);
+	glVertex2f(-length * 0.5f, -thickness * 0.5f);
+	glVertex2f(length * 0.25f, -thickness * 0.5f);
+	glVertex2f(length * 0.5f, 0.0f);
+	glVertex2f(length * 0.3f, thickness * 0.5f);
+	glVertex2f(-length * 0.5f, thickness * 0.5f);
+	glEnd();
+	glColor3f(color.r * 0.5f, color.g * 0.5f, color.b * 0.5f);
+	glBegin(GL_LINE_LOOP);
+	glVertex2f(-length * 0.5f, -thickness * 0.5f);
+	glVertex2f(length * 0.25f, -thickness * 0.5f);
+	glVertex2f(length * 0.5f, 0.0f);
+	glVertex2f(length * 0.3f, thickness * 0.5f);
+	glVertex2f(-length * 0.5f, thickness * 0.5f);
+	glEnd();
+	glPopMatrix();
+}
+
+// A crossed cluster of planks/beams (e.g. a fallen roof frame)
+void drawWoodDebrisPile(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+	drawWoodPlank(0.0f, 4.0f, 70.0f, 10.0f, 12.0f, WoodBrown);
+	drawBrokenBeam(20.0f, 10.0f, 55.0f, 9.0f, -20.0f, BurntWood);
+	drawWoodPlank(-15.0f, 14.0f, 50.0f, 8.0f, 35.0f, WoodBrownLight);
+	drawBrokenBeam(10.0f, 20.0f, 45.0f, 8.0f, 100.0f, WoodBrown);
+	glPopMatrix();
+}
+
+// ---------------------- Roof Debris ----------------------
+void drawBrokenRoofPiece(float x, float y, float w, float h, float rotation,
+						 Color3 color) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+	glColor3f(color.r, color.g, color.b);
+	glBegin(GL_QUADS);
+	glVertex2f(-w * 0.5f, -h * 0.5f);
+	glVertex2f(w * 0.5f, -h * 0.35f);
+	glVertex2f(w * 0.4f, h * 0.5f);
+	glVertex2f(-w * 0.45f, h * 0.4f);
+	glEnd();
+	glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+	glBegin(GL_LINES);
+	glVertex2f(-w * 0.2f, -h * 0.4f);
+	glVertex2f(-w * 0.1f, h * 0.4f);
+	glVertex2f(w * 0.15f, -h * 0.4f);
+	glVertex2f(w * 0.2f, h * 0.4f);
+	glEnd();
+	glPopMatrix();
+}
+
+// A cluster of broken roof shingle pieces in mixed colors/orientations
+void drawRoofDebris(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+	drawBrokenRoofPiece(-10.0f, 6.0f, 55.0f, 30.0f, 8.0f, RoofDarkRed);
+	drawBrokenRoofPiece(28.0f, 4.0f, 40.0f, 24.0f, -15.0f, RoofGray);
+	drawBrokenRoofPiece(5.0f, 20.0f, 35.0f, 20.0f, 30.0f, BurntWood);
+	glPopMatrix();
+}
+
+// ---------------------- Metal / Glass Debris ----------------------
+void drawMetalShard(float x, float y, float size, float rotation,
+					Color3 color) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+	glColor3f(color.r, color.g, color.b);
+	glBegin(GL_QUADS);
+	glVertex2f(-size * 0.5f, -size * 0.15f);
+	glVertex2f(size * 0.5f, -size * 0.25f);
+	glVertex2f(size * 0.4f, size * 0.2f);
+	glVertex2f(-size * 0.35f, size * 0.15f);
+	glEnd();
+	glColor3f(fminf(color.r * 1.3f, 1.0f), fminf(color.g * 1.3f, 1.0f),
+			  fminf(color.b * 1.3f, 1.0f));
+	glLineWidth(1.0f);
+	glBegin(GL_LINE_LOOP);
+	glVertex2f(-size * 0.5f, -size * 0.15f);
+	glVertex2f(size * 0.5f, -size * 0.25f);
+	glVertex2f(size * 0.4f, size * 0.2f);
+	glVertex2f(-size * 0.35f, size * 0.15f);
+	glEnd();
+	glPopMatrix();
+}
+
+// Small translucent shards of broken glass/window
+void drawBrokenGlass(float x, float y, float size, float rotation) {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+	glColor4f(GlassBlue.r, GlassBlue.g, GlassBlue.b, 0.55f);
+	glBegin(GL_TRIANGLES);
+	glVertex2f(0.0f, 0.0f);
+	glVertex2f(size, size * 0.3f);
+	glVertex2f(size * 0.3f, size * 0.6f);
+	glEnd();
+	glColor4f(GlassBlue.r, GlassBlue.g, GlassBlue.b, 0.4f);
+	glBegin(GL_TRIANGLES);
+	glVertex2f(size * 0.2f, -size * 0.1f);
+	glVertex2f(size * 0.7f, -size * 0.35f);
+	glVertex2f(size * 0.55f, size * 0.1f);
+	glEnd();
+	glPopMatrix();
+	glDisable(GL_BLEND);
+}
+
+// ---------------------- Broken Houses ----------------------
+// A half-collapsed cottage: one jagged wall remains, roof leans against it.
+void drawBrokenHouse1(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	// Rubble and bricks scattered at the base
+	drawBrickPileLarge(-45.0f, 8.0f, 0.9f);
+	drawBrickPileSmall(55.0f, 6.0f, 0.8f);
+	drawRubblePile(10.0f, 5.0f, 0.7f);
+
+	// Remaining jagged wall section
+	// glColor3f(DamagedWall.r, DamagedWall.g, DamagedWall.b);
+	// glBegin(GL_POLYGON);
+	// glVertex2f(-70.0f, 20.0f);
+	// glVertex2f(-70.0f, 150.0f);
+	// glVertex2f(-40.0f, 190.0f);
+	// glVertex2f(-10.0f, 145.0f);
+	// glVertex2f(-10.0f, 20.0f);
+	// glEnd();
+
+	// // Broken window hole in the wall
+	// glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+	// drawRect(-58.0f, 80.0f, -32.0f, 120.0f);
+
+	// Leaning, partially collapsed roof piece resting against the wall
+	drawBrokenRoofPiece(30.0f, 90.0f, 150.0f, 75.0f, -25.0f, RoofDarkRed);
+
+	// Chimney stub with a broken top edge
+	glColor3f(CharcoalLight.r, CharcoalLight.g, CharcoalLight.b);
+	drawRect(0.0f, 20.0f, 26.0f, 110.0f);
+	glBegin(GL_TRIANGLES);
+	glVertex2f(0.0f, 110.0f);
+	glVertex2f(26.0f, 110.0f);
+	glVertex2f(14.0f, 128.0f);
+	glEnd();
+
+	// Wooden beams strewn across the rubble
+	drawBrokenBeam(15.0f, 15.0f, 95.0f, 10.0f, 12.0f, WoodBrown);
+	drawWoodPlank(-25.0f, 10.0f, 70.0f, 8.0f, -10.0f, BurntWood);
+
+	glPopMatrix();
+}
+
+// A wider corner ruin: two adjoining walls survive as a jagged skyline,
+// with exposed beams and larger rubble/metal/glass debris.
+void drawBrokenHouse2(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	// Large base rubble
+	drawBrickPileLarge(-25.0f, 8.0f, 1.1f);
+	drawRubblePile(55.0f, 6.0f, 1.0f);
+	drawWoodDebrisPile(-75.0f, 5.0f, 0.85f);
+
+	// // Jagged broken wall silhouette (remains of two adjoining walls)
+	// glColor3f(DamagedWallDark.r, DamagedWallDark.g, DamagedWallDark.b);
+	// glBegin(GL_POLYGON);
+	// glVertex2f(-95.0f, 20.0f);
+	// glVertex2f(-95.0f, 190.0f);
+	// glVertex2f(-65.0f, 225.0f);
+	// glVertex2f(-40.0f, 165.0f);
+	// glVertex2f(-10.0f, 205.0f);
+	// glVertex2f(20.0f, 135.0f);
+	// glVertex2f(50.0f, 180.0f);
+	// glVertex2f(85.0f, 150.0f);
+	// glVertex2f(95.0f, 20.0f);
+	// glEnd();
+
+	// Broken window holes
+	// glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+	// drawRect(-85.0f, 70.0f, -60.0f, 110.0f);
+	// drawRect(0.0f, 60.0f, 22.0f, 95.0f);
+
+	// Exposed wooden support beams sticking out from the broken top
+	drawWoodPlank(-55.0f, 175.0f, 55.0f, 8.0f, -30.0f, WoodBrownLight);
+	drawBrokenBeam(35.0f, 155.0f, 50.0f, 8.0f, 40.0f, WoodBrown);
+
+	// Metal and glass debris near the base
+	drawMetalShard(65.0f, 16.0f, 34.0f, 20.0f, MetalGray);
+	drawBrokenGlass(75.0f, 22.0f, 18.0f, -12.0f);
+
+	glPopMatrix();
+}
+
+// A simple, cheaper ruin (rubble mound + wall stub) for background/small use
+void drawBrokenHouse3(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	// Low mound of rubble
+	drawIrregularBlob(0.0f, 14.0f, 65.0f, 26.0f, 10, 2.3f, AshGray);
+	drawIrregularBlob(-10.0f, 10.0f, 30.0f, 14.0f, 8, 4.1f, DirtBrown);
+
+	// Short stub of a wall
+	glColor3f(DamagedWallDark.r, DamagedWallDark.g, DamagedWallDark.b);
+	glBegin(GL_POLYGON);
+	glVertex2f(-15.0f, 15.0f);
+	glVertex2f(-15.0f, 60.0f);
+	glVertex2f(5.0f, 78.0f);
+	glVertex2f(25.0f, 55.0f);
+	glVertex2f(25.0f, 15.0f);
+	glEnd();
+
+	// Flat roof fragment lying atop the mound
+	drawBrokenRoofPiece(20.0f, 45.0f, 55.0f, 24.0f, 12.0f, RoofGray);
+
+	// A couple of loose bricks
+	drawBrick(-35.0f, 12.0f, 16.0f, 8.0f, 12.0f, BrickBrown);
+	drawBrick(38.0f, 10.0f, 14.0f, 7.0f, -8.0f, BrickRed);
+
+	glPopMatrix();
+}
+
+// ---------------------- Burnt Trees (3 distinct designs)
+// ---------------------- Mostly dead pine: dark trunk, a few bare branches,
+// almost no foliage.
+void drawBurntTree1(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	glColor3f(BurntWood.r * 0.6f, BurntWood.g * 0.6f, BurntWood.b * 0.6f);
+	drawRect(-7.0f, 0.0f, 7.0f, 130.0f);
+
+	glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+	glLineWidth(3.0f);
+	glBegin(GL_LINES);
+	glVertex2f(0.0f, 100.0f);
+	glVertex2f(-35.0f, 130.0f);
+	glVertex2f(0.0f, 90.0f);
+	glVertex2f(30.0f, 115.0f);
+	glVertex2f(0.0f, 70.0f);
+	glVertex2f(-28.0f, 95.0f);
+	glVertex2f(0.0f, 55.0f);
+	glVertex2f(22.0f, 75.0f);
+	glVertex2f(0.0f, 130.0f);
+	glVertex2f(8.0f, 150.0f);
+	glEnd();
+
+	// A couple of sparse burnt foliage tufts near the base
+	glColor3f(0.10f, 0.14f, 0.06f);
+	drawTriangle(-18.0f, 10.0f, 0.0f, 10.0f, 0.0f, 35.0f);
+
+	glPopMatrix();
+}
+
+// Partially burned pine: dark trunk, patchy brown/green foliage, broken top.
+void drawBurntTree2(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	glColor3f(0.20f, 0.13f, 0.08f);
+	drawRect(-9.0f, 0.0f, 9.0f, 60.0f);
+
+	// Lower remaining foliage (patchy dark green/brown)
+	glColor3f(0.16f, 0.28f, 0.10f);
+	drawTriangle(-45.0f, 40.0f, 0.0f, 40.0f, 0.0f, 95.0f);
+	glColor3f(0.34f, 0.26f, 0.12f);
+	drawTriangle(0.0f, 40.0f, 40.0f, 40.0f, 0.0f, 90.0f);
+
+	// Middle sparse foliage
+	glColor3f(0.14f, 0.22f, 0.09f);
+	drawTriangle(-30.0f, 80.0f, 0.0f, 80.0f, 0.0f, 125.0f);
+
+	// Broken top: a snapped trunk stub instead of a pointed crown
+	glColor3f(0.18f, 0.12f, 0.08f);
+	drawRect(-6.0f, 100.0f, 6.0f, 140.0f);
+	glBegin(GL_TRIANGLES);
+	glVertex2f(-6.0f, 140.0f);
+	glVertex2f(6.0f, 140.0f);
+	glVertex2f(14.0f, 150.0f);
+	glEnd();
+
+	glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+	glLineWidth(2.0f);
+	glBegin(GL_LINES);
+	glVertex2f(0.0f, 110.0f);
+	glVertex2f(-25.0f, 130.0f);
+	glEnd();
+
+	glPopMatrix();
+}
+
+// Heavily destroyed tree: mostly black trunk, broken branch stubs, and a
+// small amount of burnt foliage clinging near the bottom.
+void drawBurntTree3(float x, float y, float scale) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+	drawRect(-6.0f, 0.0f, 6.0f, 85.0f);
+
+	glLineWidth(3.0f);
+	glBegin(GL_LINES);
+	glVertex2f(0.0f, 60.0f);
+	glVertex2f(-20.0f, 72.0f);
+	glVertex2f(0.0f, 45.0f);
+	glVertex2f(18.0f, 55.0f);
+	glVertex2f(0.0f, 30.0f);
+	glVertex2f(-15.0f, 40.0f);
+	glVertex2f(0.0f, 85.0f);
+	glVertex2f(6.0f, 100.0f);
+	glEnd();
+
+	// Small burnt foliage clump near the bottom only
+	glColor3f(0.09f, 0.13f, 0.05f);
+	drawTriangle(-14.0f, 5.0f, 14.0f, 5.0f, 0.0f, 28.0f);
+
+	glPopMatrix();
+}
+
+// ---------------------- Fire ----------------------
+// Layered flame using firePhase for a subtle flicker (no complex animation).
+void drawFire(float x, float y, float scale) {
+	float flick = sinf(firePhase) * 0.12f + 1.0f;
+	float flick2 = cosf(firePhase * 1.3f) * 0.10f + 1.0f;
+
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glScalef(scale, scale, 1.0f);
+
+	// Outer red flame
+	glColor3f(EmberRed.r, EmberRed.g, EmberRed.b);
+	drawTriangle(-16.0f, 0.0f, 16.0f, 0.0f, 0.0f, 55.0f * flick);
+	drawTriangle(-10.0f, 0.0f, 6.0f, 0.0f, -4.0f, 40.0f * flick2);
+
+	// Middle orange flame
+	glColor3f(EmberOrange.r, EmberOrange.g, EmberOrange.b);
+	drawTriangle(-10.0f, 0.0f, 10.0f, 0.0f, 0.0f, 40.0f * flick2);
+
+	// Inner yellow flame
+	glColor3f(EmberYellow.r, EmberYellow.g, EmberYellow.b);
+	drawTriangle(-5.0f, 0.0f, 5.0f, 0.0f, 0.0f, 24.0f * flick);
+
+	glPopMatrix();
+}
+
+// ---------------------- Smoke ----------------------
+// Overlapping translucent puffs that rise and gently sway using smokeOffset.
+void drawSmoke(float x, float y, float scale) {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	float wrapWidth = WIN_W + 400.0f;
-	float dx = fmodf(cloudOffset, wrapWidth);
-	for (int pass = 0; pass < 2; pass++) {
-		glPushMatrix();
-		glTranslatef(dx - pass * wrapWidth, 0.0f, 0.0f);
-		for (int i = 0; i < numSmoke; i++) {
-			drawSmokeCloud(baseX[i], baseY[i], scale[i]);
-		}
-		glPopMatrix();
+	for (int i = 0; i < 4; i++) {
+		float t = (float)i / 4.0f;
+		float rise = fmodf(smokeOffset * 0.6f + t * 60.0f, 140.0f);
+		float sway = sinf(smokeOffset * 0.04f + i * 1.7f) * 10.0f;
+		float puffY = y + rise * scale;
+		float puffX = x + (sway + t * 6.0f) * scale;
+		float alpha = 0.30f * (1.0f - rise / 140.0f);
+		float radius = (16.0f + i * 6.0f) * scale;
+		glColor4f(0.30f, 0.30f, 0.30f, alpha);
+		drawCircle(puffX, puffY, radius, 16);
 	}
 
 	glDisable(GL_BLEND);
 }
 
-// A bomb crater: a dark dirt rim around an even darker pit
-void drawHole(float cx, float cy, float rx, float ry) {
-	glPushMatrix();
-	glTranslatef(cx, cy, 0.0f);
-	glScalef(rx, ry, 1.0f);
-	glColor3f(0.22f, 0.16f, 0.10f);
-	drawCircle(0.0f, 0.0f, 1.0f, 28);
-	glColor3f(0.08f, 0.06f, 0.05f);
-	drawCircle(0.0f, 0.0f, 0.55f, 28);
-	glPopMatrix();
-}
-
-// A flatter, subtler burnt-grass smudge (no raised rim, unlike a crater)
-void drawScorchMark(float cx, float cy, float rx, float ry) {
-	glPushMatrix();
-	glTranslatef(cx, cy, 0.0f);
-	glScalef(rx, ry, 1.0f);
-	glColor3f(0.12f, 0.10f, 0.08f);
-	drawCircle(0.0f, 0.0f, 1.0f, 24);
-	glPopMatrix();
-}
-
-// A tree consumed by fire: charred trunk, bare charred branches, flames
-// engulfing the crown, and smoke rising above.
-void drawBurningTree(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-
-	glColor3f(0.15f, 0.10f, 0.08f);
-	drawRect(-6.0f, 0.0f, 6.0f, 50.0f);
-
-	glColor3f(0.12f, 0.08f, 0.06f);
-	drawTriangle(-6.0f, 40.0f, -22.0f, 55.0f, -6.0f, 48.0f);
-	drawTriangle(6.0f, 42.0f, 20.0f, 58.0f, 6.0f, 50.0f);
-
-	glPopMatrix();
-}
-
-// A collapsed hut: jagged broken wall stubs, a fallen roof section, a pile
-// of debris, a scorch mark beneath it, and a small fire still smoldering in
-// the wreckage. `variant` mirrors the ruin horizontally for visual variety.
-void drawRubbleHut(float x, float y, float scaleX, float scaleY,
-				   const HutColors &c, int variant) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scaleX, scaleY, 1.0f);
-
-	float mirror = (variant % 2 == 0) ? 1.0f : -1.0f;
-	glTranslatef(60.0f, 0.0f, 0.0f);
-	glScalef(mirror, 1.0f, 1.0f);
-	glTranslatef(-60.0f, 0.0f, 0.0f);
-
-	// Scorch mark beneath the ruin
-	glColor3f(0.10f, 0.08f, 0.07f);
-	glPushMatrix();
-	glTranslatef(60.0f, 5.0f, 0.0f);
-	glScalef(90.0f, 22.0f, 1.0f);
-	drawCircle(0.0f, 0.0f, 1.0f, 24);
-	glPopMatrix();
-
-	// Broken wall fragment (left), jagged crumbled top
-	glColor3f(c.wall.r * 0.55f, c.wall.g * 0.55f, c.wall.b * 0.55f);
-	glBegin(GL_POLYGON);
+// ---------------------- Ground ----------------------
+// Damaged ground: muted grass, a scorched dirt swath instead of a tidy path,
+// and a few darker trampled patches. Burn marks/craters/debris are layered
+// on top of this in scene2().
+void drawScene2Ground() {
+	glColor3f(DustyGreen.r, DustyGreen.g, DustyGreen.b);
+	glBegin(GL_QUADS);
 	glVertex2f(0.0f, 0.0f);
+	glVertex2f(WIN_W, 0.0f);
+	glVertex2f(WIN_W, WIN_H * 0.33f);
+	glVertex2f(0.0f, WIN_H * 0.33f);
+	glEnd();
+
+	// Broad dirt/scorched swath replacing the peaceful path
+	glColor3f(DirtBrown.r, DirtBrown.g, DirtBrown.b);
+	glBegin(GL_QUAD_STRIP);
 	glVertex2f(0.0f, 55.0f);
-	glVertex2f(18.0f, 70.0f);
-	glVertex2f(30.0f, 50.0f);
-	glVertex2f(40.0f, 0.0f);
+	glVertex2f(0.0f, 105.0f);
+	glVertex2f(300.0f, 65.0f);
+	glVertex2f(300.0f, 120.0f);
+	glVertex2f(650.0f, 50.0f);
+	glVertex2f(650.0f, 100.0f);
+	glVertex2f(1000.0f, 70.0f);
+	glVertex2f(1000.0f, 125.0f);
+	glVertex2f(1350.0f, 55.0f);
+	glVertex2f(1350.0f, 105.0f);
+	glVertex2f((float)WIN_W, 60.0f);
+	glVertex2f((float)WIN_W, 110.0f);
 	glEnd();
 
-	// Broken wall fragment (right), shorter and leaning
-	glPushMatrix();
-	glTranslatef(85.0f, 0.0f, 0.0f);
-	glRotatef(-8.0f, 0.0f, 0.0f, 1.0f);
-	glColor3f(c.wall.r * 0.5f, c.wall.g * 0.5f, c.wall.b * 0.5f);
-	glBegin(GL_POLYGON);
-	glVertex2f(0.0f, 0.0f);
-	glVertex2f(0.0f, 38.0f);
-	glVertex2f(15.0f, 45.0f);
-	glVertex2f(28.0f, 0.0f);
-	glEnd();
-	glPopMatrix();
-
-	// Fallen roof section lying in the wreckage
-	glColor3f(c.roof.r * 0.6f, c.roof.g * 0.6f, c.roof.b * 0.6f);
-	drawTriangle(20.0f, 2.0f, 95.0f, 2.0f, 60.0f, 22.0f);
-
-	// Rubble/debris chunks
-	glColor3f(0.45f, 0.42f, 0.40f);
-	drawTriangle(45.0f, 0.0f, 58.0f, 0.0f, 50.0f, 14.0f);
-	drawTriangle(58.0f, 0.0f, 72.0f, 0.0f, 66.0f, 12.0f);
-	drawTriangle(35.0f, 0.0f, 46.0f, 0.0f, 40.0f, 10.0f);
-
-	// // Smoldering fire still burning in the debris
-	// drawFlame(55.0f, 8.0f, 0.55f);
-
-	glPopMatrix();
+	// Darker, trampled/damaged patches scattered on the grass
+	glColor3f(DirtBrown.r * 0.85f, DirtBrown.g * 0.85f, DirtBrown.b * 0.85f);
+	drawCircle(180.0f, 200.0f, 55.0f, 20);
+	drawCircle(980.0f, 230.0f, 70.0f, 20);
+	drawCircle(1400.0f, 170.0f, 45.0f, 20);
 }
 
+// A translucent brownish veil laid over the background (mountains/hills/sky)
+// to give Scene 2 a hazy, dust-choked atmosphere without altering Scene 1's
+// drawMountains()/drawHills() colors directly.
+void drawDustHaze() {
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(0.45f, 0.40f, 0.32f, 0.28f);
+	glBegin(GL_QUADS);
+	glVertex2f(0.0f, 250.0f);
+	glVertex2f((float)WIN_W, 250.0f);
+	glVertex2f((float)WIN_W, (float)WIN_H);
+	glVertex2f(0.0f, (float)WIN_H);
+	glEnd();
+	glDisable(GL_BLEND);
+}
+
+// ---------------------- Scene2 composition ----------------------
 void scene2() {
-	// Hazy, smoke-dimmed sun
+	// 1. Sun (dimmed/hazed by the dust overlay drawn right after it)
 	glPushMatrix();
 	glTranslatef(550.0f, 250.0f, 0.0f);
-	glColor3f(1.0f, 0.55f, 0.25f);
-	drawCircle(520.0f, 520.0f, 40.0f, 40);
+	sun();
 	glPopMatrix();
 
-	drawBackgroundSmokeClouds();
+	// 2. Clouds
+	drawClouds();
 
+	// 3. Mountains + background forest, reused from Scene 1
 	drawMountains();
 	drawHills();
-	drawGroundAndPath();
 
-	// ================= BOMB CRATERS & SCORCH MARKS ALONG THE PATH
-	// =================
-	drawHole(180.0f, 90.0f, 55.0f, 16.0f);
-	drawScorchMark(400.0f, 95.0f, 70.0f, 20.0f);
-	drawHole(700.0f, 85.0f, 60.0f, 18.0f);
-	drawScorchMark(950.0f, 100.0f, 65.0f, 18.0f);
-	drawHole(1250.0f, 90.0f, 50.0f, 15.0f);
-	drawScorchMark(1450.0f, 95.0f, 60.0f, 17.0f);
+	// Dust haze desaturates the background so it reads as devastated/smoky
+	drawDustHaze();
 
-	// // ================= BACKGROUND BURNING TREES =================
-	drawBurningTree(160.0f, 285.0f, 0.70f);
-	drawBurningTree(400.0f, 280.0f, 0.75f);
-	drawBurningTree(640.0f, 285.0f, 0.70f);
-	drawBurningTree(870.0f, 280.0f, 0.75f);
-	drawBurningTree(1110.0f, 285.0f, 0.70f);
-	drawBurningTree(1340.0f, 280.0f, 0.75f);
+	// 4. Ground (damaged grass + scorched dirt swath)
+	drawScene2Ground();
 
-	// ================= FURTHEST ROW RUINS =================
-	drawRubbleHut(50.0f, 225.0f, 0.24f, 0.27f, HutColor7, 0);
-	drawRubbleHut(280.0f, 222.0f, 0.28f, 0.25f, HutColor14, 1);
-	drawRubbleHut(520.0f, 220.0f, 0.25f, 0.29f, HutColor2, 0);
-	drawRubbleHut(760.0f, 218.0f, 0.27f, 0.24f, HutColor19, 1);
-	drawRubbleHut(990.0f, 215.0f, 0.23f, 0.26f, HutColor6, 0);
-	drawRubbleHut(1220.0f, 212.0f, 0.29f, 0.28f, HutColor11, 1);
-	drawRubbleHut(1450.0f, 210.0f, 0.26f, 0.23f, HutColor4, 0);
+	// 5. Burn marks / craters directly on the ground
+	drawBurnMarkLarge(430.0f, 90.0f, 1.0f, Charcoal);
+	drawBurnMarkLarge(950.0f, 70.0f, 1.1f, BurntBlack);
+	drawBurnMarkMedium(180.0f, 60.0f, 0.9f, Charcoal);
+	drawBurnMarkMedium(1250.0f, 55.0f, 1.0f, CharcoalLight);
+	drawBurnMarkSmall(700.0f, 40.0f, 1.0f, Charcoal);
+	drawBurnMarkSmall(1450.0f, 90.0f, 0.9f, BurntBlack);
+	drawCraterSmall(280.0f, 45.0f, 1.0f);
+	drawCraterSmall(1120.0f, 100.0f, 0.9f);
+	drawCraterLarge(560.0f, 110.0f, 1.0f);
+	drawCraterSmall(850.0f, 30.0f, 0.8f);
 
-	// ================= MIDDLE ROW RUINS =================
-	drawRubbleHut(-10.0f, 190.0f, 0.24f, 0.28f, HutColor16, 1);
-	drawRubbleHut(200.0f, 188.0f, 0.28f, 0.26f, HutColor9, 0);
-	drawRubbleHut(420.0f, 185.0f, 0.25f, 0.24f, HutColor20, 1);
-	drawRubbleHut(650.0f, 182.0f, 0.27f, 0.29f, HutColor5, 0);
-	drawRubbleHut(880.0f, 180.0f, 0.23f, 0.25f, HutColor18, 1);
-	drawRubbleHut(1100.0f, 178.0f, 0.26f, 0.27f, HutColor12, 0);
-	drawRubbleHut(1340.0f, 175.0f, 0.29f, 0.24f, HutColor3, 1);
+	// 6. Distant destroyed houses + burnt trees (small, background row)
+	drawBrokenHouse3(120.0f, 222.0f, 0.55f);
+	drawBrokenHouse1(430.0f, 218.0f, 0.45f);
+	drawBrokenHouse3(760.0f, 216.0f, 0.50f);
+	drawBrokenHouse1(1080.0f, 214.0f, 0.42f);
+	drawBrokenHouse3(1380.0f, 212.0f, 0.55f);
 
-	// ================= FRONT ROW RUINS (Just behind path) =================
-	drawRubbleHut(100.0f, 150.0f, 0.24f, 0.26f, HutColor15, 0);
-	drawRubbleHut(340.0f, 145.0f, 0.28f, 0.23f, HutColor8, 1);
-	drawRubbleHut(580.0f, 140.0f, 0.25f, 0.28f, HutColor17, 0);
-	drawRubbleHut(820.0f, 135.0f, 0.27f, 0.25f, HutColor1, 1);
-	drawRubbleHut(1050.0f, 132.0f, 0.23f, 0.29f, HutColor13, 0);
-	drawRubbleHut(1280.0f, 130.0f, 0.26f, 0.24f, HutColor10, 1);
+	drawBurntTree2(200.0f, 280.0f, 0.55f);
+	drawBurntTree1(500.0f, 278.0f, 0.5f);
+	drawBurntTree3(860.0f, 280.0f, 0.5f);
+	drawBurntTree2(1180.0f, 278.0f, 0.55f);
+	drawBurntTree1(1420.0f, 280.0f, 0.5f);
 
-	// ================= FOREGROUND BURNING TREES =================
-	drawBurningTree(40.0f, 100.0f, 1.2f);
-	drawBurningTree(1560.0f, 100.0f, 1.2f);
+	// 7. Middle-ground destroyed houses
+	drawBrokenHouse2(260.0f, 175.0f, 0.7f);
+	drawBrokenHouse1(650.0f, 165.0f, 0.75f);
+	drawBrokenHouse3(1020.0f, 170.0f, 0.65f);
+	drawBrokenHouse2(1330.0f, 160.0f, 0.7f);
+
+	// 8. Rubble scattered across the ground
+	drawRubblePile(120.0f, 55.0f, 1.0f);
+	drawRubblePile(1500.0f, 60.0f, 1.0f);
+	drawRubblePile(1000.0f, 45.0f, 0.8f);
+
+	// 9. Bricks / brick piles
+	drawBrickPileLarge(500.0f, 40.0f, 1.0f);
+	drawBrickPileSmall(870.0f, 35.0f, 1.0f);
+	drawBrickPileSmall(1180.0f, 50.0f, 0.9f);
+	drawBrick(340.0f, 30.0f, 26.0f, 12.0f, 18.0f, BrickRed);
+	drawBrick(760.0f, 25.0f, 22.0f, 10.0f, -10.0f, BrickBrown);
+
+	// 10. Broken wood / roof debris
+	drawWoodDebrisPile(230.0f, 40.0f, 1.0f);
+	drawWoodDebrisPile(1050.0f, 35.0f, 0.9f);
+	drawWoodPlank(620.0f, 30.0f, 90.0f, 12.0f, 15.0f, WoodBrown);
+	drawBrokenBeam(1350.0f, 28.0f, 80.0f, 11.0f, -25.0f, BurntWood);
+	drawRoofDebris(390.0f, 40.0f, 1.0f);
+	drawRoofDebris(1180.0f, 45.0f, 0.9f);
+
+	// 11. Metal / glass debris
+	drawMetalShard(680.0f, 32.0f, 34.0f, 20.0f, MetalGray);
+	drawBrokenGlass(710.0f, 40.0f, 22.0f, -15.0f);
+	drawMetalShard(1420.0f, 35.0f, 30.0f, -10.0f, MetalGray);
+
+	// 12. Large, prominent destroyed structure in the foreground
+	// drawBrokenHouse2(800.0f, 100.0f, 1.15f);
+
+	// 13. Foreground burnt trees framing the scene
+	drawBurntTree1(60.0f, 90.0f, 1.1f);
+	drawBurntTree3(340.0f, 85.0f, 1.0f);
+	drawBurntTree2(1250.0f, 90.0f, 1.1f);
+	drawBurntTree3(1540.0f, 85.0f, 1.05f);
+
+	// 14. Fire near the ruins
+	drawFire(760.0f, 95.0f, 1.0f);
+	drawFire(650.0f, 150.0f, 0.7f);
+
+	// 15. Smoke rising from the ruins/fires
+	drawSmoke(760.0f, 130.0f, 1.0f);
+	drawSmoke(650.0f, 190.0f, 0.8f);
+	drawSmoke(260.0f, 210.0f, 0.7f);
+	drawSmoke(1330.0f, 195.0f, 0.75f);
 }
 
-void display() {
+// ---------------------- Scene2 rendering ----------------------
+void renderScene2() {
 	// Dusty, smoke-dimmed sky for the bombed scene
 	glClearColor(0.45f, 0.38f, 0.32f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	scene2();
+}
+
+void display() {
+	renderScene2();
 	glFlush();
 };
 
 void update(int value) {
 	cloudOffset += CLOUD_SPEED;
+	firePhase += FIRE_SPEED;
+	smokeOffset += SMOKE_DRIFT_SPEED;
 	glutPostRedisplay();
 	glutTimerFunc(16, update, 0);
 }
