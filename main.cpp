@@ -24,6 +24,11 @@ const float SMOKE_DRIFT_SPEED = 0.25f;
 float smokeOffset = 0.0f;
 
 //------------------------- Basic Drawing Helpers -------------------------
+// ============================================================
+// DRAWING HELPERS
+// These are primitive reusable functions.
+// No Object IDs assigned.
+// ============================================================
 void drawRect(float x1, float y1, float x2, float y2) {
 	glBegin(GL_QUADS);
 	glVertex2f(x1, y1);
@@ -178,6 +183,7 @@ const HutColors HutColor20 = {{0.15f, 0.18f, 0.22f}, {0.55f, 0.15f, 0.15f},
 //---------------------------- end(hutcolors)----------------------------
 
 //-----------------------------HutDesigns-----------------------------
+// [S1-OBJ-01] Hut Type 1
 void hut1(HutColors colors) {
 	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
 	drawRect(350.0f, 400.0f, 390.0f, 490.0f);
@@ -213,6 +219,7 @@ void hut1(HutColors colors) {
 	glEnd();
 }
 
+// [S1-OBJ-02] Hut Type 2
 void hut2(HutColors colors) {
 	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
 	drawRect(190.0f, 150.0f, 410.0f, 340.0f);
@@ -275,6 +282,7 @@ void hut2(HutColors colors) {
 	glEnd();
 }
 
+// [S1-OBJ-03] Hut Type 3
 void hut3(HutColors colors) {
 	// A square, flat-roofed adobe-style hut with a stepped roofline
 	// and a small awning over the door.
@@ -318,6 +326,7 @@ void hut3(HutColors colors) {
 	glEnd();
 }
 
+// [S1-OBJ-04] Hut Type 4
 void hut4(HutColors colors) {
 	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
 	drawRect(370.0f, 250.0f, 410.0f, 440.0f);
@@ -359,6 +368,7 @@ void hut4(HutColors colors) {
 	glEnd();
 }
 
+// [S1-OBJ-05] Hut Type 5
 void hut5(HutColors colors) {
 	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
 	drawRect(155.0f, 250.0f, 185.0f, 410.0f);
@@ -415,6 +425,7 @@ void hut5(HutColors colors) {
 //------------------------- Trees, Edge Trees &
 // Environment-------------------------
 
+// [S1-OBJ-06] Pine Tree
 // Helper to draw a customizable pine tree
 void drawTree(float x, float y, float scale) {
 	glPushMatrix();
@@ -446,6 +457,7 @@ void drawTree(float x, float y, float scale) {
 	glPopMatrix();
 }
 
+// [S1-OBJ-07] Tiny Tree
 // Tiny dark-green tree specifically for hill edge contours
 void drawTinyTree(float x, float y, float scale) {
 	glPushMatrix();
@@ -485,6 +497,7 @@ void drawTreeOnHillEdge(float cx, float cy, float rx, float ry,
 	drawTinyTree(x, y, scale);
 }
 
+// [S1-OBJ-08] Mountain Range
 // Green Mountain range
 void drawMountains() {
 	glPushMatrix();
@@ -514,6 +527,7 @@ void drawMountains() {
 	glPopMatrix();
 }
 
+// [S1-OBJ-09] Rolling Hills
 // Rolling Green Hills with small trees planted along the hill edges
 void drawHills() {
 	// 1. Back Left Hill
@@ -582,12 +596,14 @@ void drawHills() {
 	drawTreeOnHillEdge(h3_cx, h3_cy, h3_rx, h3_ry, 145.0f, 0.20f);
 }
 
+// [S1-OBJ-10] Sun
 // gosun
 void sun() {
 	glColor3f(1.0f, 0.85f, 0.0f);
 	drawCircle(520.0f, 520.0f, 40.0f, 40);
 }
 
+// [S1-OBJ-11] Cloud
 // Puffy cloud made from overlapping circles (shadow puffs + bright highlight
 // puffs)
 void drawCloud(float cx, float cy, float scale) {
@@ -628,6 +644,7 @@ void drawClouds() {
 	}
 }
 
+// [S1-OBJ-12] Night Overlay
 // gonight
 void drawNightOverlay() {
 	glEnable(GL_BLEND);
@@ -669,6 +686,7 @@ void drawNightOverlay() {
 	glDisable(GL_BLEND);
 }
 
+// [S1-OBJ-13] Ground and Path
 void drawGroundAndPath() {
 	glColor3f(0.30f, 0.55f, 0.25f);
 	glBegin(GL_QUADS);
@@ -693,6 +711,7 @@ void drawGroundAndPath() {
 	glEnd();
 }
 
+// [S1-SCENE] Peaceful Village Scene
 void scene1() {
 	glPushMatrix();
 	glTranslatef(550.0f, 250.0f, 0.0f);
@@ -843,6 +862,7 @@ void scene1() {
 	drawTree(1560.0f, 100.0f, 1.2f);
 }
 
+// [S1-RENDER] Render Scene 1
 void renderScene1() {
 	if (isNightMode) {
 		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
@@ -891,6 +911,7 @@ const Color3 EmberYellow = {1.0f, 0.80f, 0.20f};
 const Color3 EmberOrange = {0.95f, 0.45f, 0.10f};
 const Color3 EmberRed = {0.80f, 0.15f, 0.10f};
 
+// [S2-OBJ-01] Irregular Blob
 // ---------------------- Generic irregular blob helper ----------------------
 // Draws an organic, jagged polygon (used for burn marks, craters and rubble)
 // instead of a perfect circle. `seed` shifts the wobble pattern so repeated
@@ -910,11 +931,13 @@ void drawIrregularBlob(float cx, float cy, float rx, float ry, int segments,
 }
 
 // ---------------------- Burn Marks ----------------------
+// [S2-OBJ-02] Burn Mark Small
 void drawBurnMarkSmall(float x, float y, float scale, Color3 color) {
 	drawIrregularBlob(x, y, 35.0f * scale, 16.0f * scale, 10,
 					  x * 0.13f + y * 0.07f, color);
 }
 
+// [S2-OBJ-03] Burn Mark Medium
 void drawBurnMarkMedium(float x, float y, float scale, Color3 color) {
 	drawIrregularBlob(x, y, 65.0f * scale, 28.0f * scale, 12,
 					  x * 0.09f + y * 0.11f, color);
@@ -923,6 +946,7 @@ void drawBurnMarkMedium(float x, float y, float scale, Color3 color) {
 					  x * 0.2f + y * 0.05f, inner);
 }
 
+// [S2-OBJ-04] Burn Mark Large
 void drawBurnMarkLarge(float x, float y, float scale, Color3 color) {
 	drawIrregularBlob(x, y, 110.0f * scale, 46.0f * scale, 14,
 					  x * 0.05f + y * 0.13f, color);
@@ -935,6 +959,7 @@ void drawBurnMarkLarge(float x, float y, float scale, Color3 color) {
 }
 
 // ---------------------- Craters ----------------------
+// [S2-OBJ-05] Crater Small
 void drawCraterSmall(float x, float y, float scale) {
 	// Lighter disturbed-earth rim, then a dark pit on top
 	drawIrregularBlob(x, y, 26.0f * scale, 18.0f * scale, 10, x * 0.31f,
@@ -943,6 +968,7 @@ void drawCraterSmall(float x, float y, float scale) {
 					  Charcoal);
 }
 
+// [S2-OBJ-06] Crater Large
 void drawCraterLarge(float x, float y, float scale) {
 	Color3 rim = {DirtBrown.r * 1.15f, DirtBrown.g * 1.1f, DirtBrown.b * 1.1f};
 	drawIrregularBlob(x, y, 55.0f * scale, 38.0f * scale, 14, x * 0.11f, rim);
@@ -953,6 +979,7 @@ void drawCraterLarge(float x, float y, float scale) {
 }
 
 // ---------------------- Bricks ----------------------
+// [S2-OBJ-07] Brick
 void drawBrick(float x, float y, float w, float h, float rotation,
 			   Color3 color) {
 	glPushMatrix();
@@ -971,6 +998,7 @@ void drawBrick(float x, float y, float w, float h, float rotation,
 	glPopMatrix();
 }
 
+// [S2-OBJ-08] Brick Pile Small
 // A small heap of a few loosely scattered bricks
 void drawBrickPileSmall(float x, float y, float scale) {
 	glPushMatrix();
@@ -983,6 +1011,7 @@ void drawBrickPileSmall(float x, float y, float scale) {
 	glPopMatrix();
 }
 
+// [S2-OBJ-09] Brick Pile Large
 // A larger, stacked pile of bricks with multiple layers
 void drawBrickPileLarge(float x, float y, float scale) {
 	glPushMatrix();
@@ -1004,6 +1033,7 @@ void drawBrickPileLarge(float x, float y, float scale) {
 }
 
 // ---------------------- Rubble ----------------------
+// [S2-OBJ-10] Rubble Pile
 void drawRubblePile(float x, float y, float scale) {
 	glPushMatrix();
 	glTranslatef(x, y, 0.0f);
@@ -1019,6 +1049,7 @@ void drawRubblePile(float x, float y, float scale) {
 }
 
 // ---------------------- Wooden Debris ----------------------
+// [S2-OBJ-11] Wood Plank
 void drawWoodPlank(float x, float y, float length, float thickness,
 				   float rotation, Color3 color) {
 	glPushMatrix();
@@ -1038,6 +1069,7 @@ void drawWoodPlank(float x, float y, float length, float thickness,
 	glPopMatrix();
 }
 
+// [S2-OBJ-12] Broken Beam
 // A wood beam with a jagged, snapped-off end
 void drawBrokenBeam(float x, float y, float length, float thickness,
 					float rotation, Color3 color) {
@@ -1063,6 +1095,7 @@ void drawBrokenBeam(float x, float y, float length, float thickness,
 	glPopMatrix();
 }
 
+// [S2-OBJ-13] Wood Debris Pile
 // A crossed cluster of planks/beams (e.g. a fallen roof frame)
 void drawWoodDebrisPile(float x, float y, float scale) {
 	glPushMatrix();
@@ -1076,6 +1109,7 @@ void drawWoodDebrisPile(float x, float y, float scale) {
 }
 
 // ---------------------- Roof Debris ----------------------
+// [S2-OBJ-14] Broken Roof Piece
 void drawBrokenRoofPiece(float x, float y, float w, float h, float rotation,
 						 Color3 color) {
 	glPushMatrix();
@@ -1098,6 +1132,7 @@ void drawBrokenRoofPiece(float x, float y, float w, float h, float rotation,
 	glPopMatrix();
 }
 
+// [S2-OBJ-15] Roof Debris
 // A cluster of broken roof shingle pieces in mixed colors/orientations
 void drawRoofDebris(float x, float y, float scale) {
 	glPushMatrix();
@@ -1110,6 +1145,7 @@ void drawRoofDebris(float x, float y, float scale) {
 }
 
 // ---------------------- Metal / Glass Debris ----------------------
+// [S2-OBJ-16] Metal Shard
 void drawMetalShard(float x, float y, float size, float rotation,
 					Color3 color) {
 	glPushMatrix();
@@ -1134,6 +1170,7 @@ void drawMetalShard(float x, float y, float size, float rotation,
 	glPopMatrix();
 }
 
+// [S2-OBJ-17] Broken Glass
 // Small translucent shards of broken glass/window
 void drawBrokenGlass(float x, float y, float size, float rotation) {
 	glEnable(GL_BLEND);
@@ -1158,6 +1195,7 @@ void drawBrokenGlass(float x, float y, float size, float rotation) {
 }
 
 // ---------------------- Broken Houses ----------------------
+// [S2-OBJ-18] Broken House 1
 // A half-collapsed cottage: one jagged wall remains, roof leans against it.
 void drawBrokenHouse1(float x, float y, float scale) {
 	glPushMatrix();
@@ -1202,6 +1240,7 @@ void drawBrokenHouse1(float x, float y, float scale) {
 	glPopMatrix();
 }
 
+// [S2-OBJ-19] Broken House 2
 // A wider corner ruin: two adjoining walls survive as a jagged skyline,
 // with exposed beams and larger rubble/metal/glass debris.
 void drawBrokenHouse2(float x, float y, float scale) {
@@ -1244,6 +1283,7 @@ void drawBrokenHouse2(float x, float y, float scale) {
 	glPopMatrix();
 }
 
+// [S2-OBJ-20] Broken House 3
 // A simple, cheaper ruin (rubble mound + wall stub) for background/small use
 void drawBrokenHouse3(float x, float y, float scale) {
 	glPushMatrix();
@@ -1275,6 +1315,7 @@ void drawBrokenHouse3(float x, float y, float scale) {
 }
 
 // ---------------------- Burnt Trees (3 distinct designs)
+// [S2-OBJ-21] Burnt Tree 1
 // ---------------------- Mostly dead pine: dark trunk, a few bare branches,
 // almost no foliage.
 void drawBurntTree1(float x, float y, float scale) {
@@ -1307,6 +1348,7 @@ void drawBurntTree1(float x, float y, float scale) {
 	glPopMatrix();
 }
 
+// [S2-OBJ-22] Burnt Tree 2
 // Partially burned pine: dark trunk, patchy brown/green foliage, broken top.
 void drawBurntTree2(float x, float y, float scale) {
 	glPushMatrix();
@@ -1345,6 +1387,7 @@ void drawBurntTree2(float x, float y, float scale) {
 	glPopMatrix();
 }
 
+// [S2-OBJ-23] Burnt Tree 3
 // Heavily destroyed tree: mostly black trunk, broken branch stubs, and a
 // small amount of burnt foliage clinging near the bottom.
 void drawBurntTree3(float x, float y, float scale) {
@@ -1375,6 +1418,7 @@ void drawBurntTree3(float x, float y, float scale) {
 }
 
 // ---------------------- Fire ----------------------
+// [S2-OBJ-24] Fire
 // Layered flame using firePhase for a subtle flicker (no complex animation).
 void drawFire(float x, float y, float scale) {
 	float flick = sinf(firePhase) * 0.12f + 1.0f;
@@ -1401,6 +1445,7 @@ void drawFire(float x, float y, float scale) {
 }
 
 // ---------------------- Smoke ----------------------
+// [S2-OBJ-25] Smoke
 // Overlapping translucent puffs that rise and gently sway using smokeOffset.
 void drawSmoke(float x, float y, float scale) {
 	glEnable(GL_BLEND);
@@ -1425,6 +1470,7 @@ void drawSmoke(float x, float y, float scale) {
 // Damaged ground: muted grass, a scorched dirt swath instead of a tidy path,
 // and a few darker trampled patches. Burn marks/craters/debris are layered
 // on top of this in scene2().
+// [S2-OBJ-26] Scene 2 Ground
 void drawScene2Ground() {
 	glColor3f(DustyGreen.r, DustyGreen.g, DustyGreen.b);
 	glBegin(GL_QUADS);
@@ -1458,6 +1504,7 @@ void drawScene2Ground() {
 	drawCircle(1400.0f, 170.0f, 45.0f, 20);
 }
 
+// [S2-OBJ-27] Dust Haze
 // A translucent brownish veil laid over the background (mountains/hills/sky)
 // to give Scene 2 a hazy, dust-choked atmosphere without altering Scene 1's
 // drawMountains()/drawHills() colors directly.
@@ -1475,6 +1522,7 @@ void drawDustHaze() {
 }
 
 // ---------------------- Scene2 composition ----------------------
+// [S2-SCENE] Bombed Village Scene
 void scene2() {
 	// 1. Sun (dimmed/hazed by the dust overlay drawn right after it)
 	glPushMatrix();
@@ -1572,6 +1620,7 @@ void scene2() {
 }
 
 // ---------------------- Scene2 rendering ----------------------
+// [S2-RENDER] Render Scene 2
 void renderScene2() {
 	// Dusty, smoke-dimmed sky for the bombed scene
 	glClearColor(0.45f, 0.38f, 0.32f, 1.0f);
@@ -1579,19 +1628,746 @@ void renderScene2() {
 	scene2();
 }
 
+//==============================scene4===================================================
+
+// ============================================================
+// BASIC COLOR
+// ============================================================
+// ============================================================
+// DRAWING HELPERS
+// These are primitive reusable functions.
+// No Object IDs assigned.
+// ============================================================
+
+void color(float r, float g, float b) { glColor3f(r, g, b); }
+// ============================================================
+// BASIC SHAPES
+// ============================================================
+
+void rect(float x, float y, float w, float h) {
+	glBegin(GL_QUADS);
+
+	glVertex2f(x, y);
+	glVertex2f(x + w, y);
+	glVertex2f(x + w, y + h);
+	glVertex2f(x, y + h);
+
+	glEnd();
+}
+
+void line(float x1, float y1, float x2, float y2) {
+	glBegin(GL_LINES);
+
+	glVertex2f(x1, y1);
+	glVertex2f(x2, y2);
+
+	glEnd();
+}
+
+void circle(float cx, float cy, float radius, int segments = 40) {
+	glBegin(GL_TRIANGLE_FAN);
+
+	glVertex2f(cx, cy);
+
+	for (int i = 0; i <= segments; i++) {
+		float angle = 2.0f * PI * i / segments;
+
+		glVertex2f(cx + cos(angle) * radius, cy + sin(angle) * radius);
+	}
+
+	glEnd();
+}
+
+// ============================================================
+// BUILDING DATA
+// ============================================================
+
+struct Building {
+	float x;
+	float width;
+	float height;
+
+	float r;
+	float g;
+	float b;
+
+	int floors;
+
+	int type;
+};
+
+// ============================================================
+// SPIRE
+// ============================================================
+
+// [S4-OBJ-10] Spire
+void spire(float x, float y, float height) {
+	color(0.20f, 0.25f, 0.30f);
+
+	glLineWidth(3);
+
+	line(x, y, x, y + height);
+}
+
+// ============================================================
+// WINDOWS
+// ============================================================
+
+void windows(float x, float y, float width, float height, int floors,
+			 int columns, bool glass = false) {
+	if (floors <= 0 || columns <= 0)
+		return;
+
+	float floorHeight = height / floors;
+
+	float windowWidth = (width * 0.65f) / columns;
+
+	float sideMargin = width * 0.17f;
+
+	float verticalMargin = floorHeight * 0.28f;
+
+	if (glass)
+		color(0.15f, 0.48f, 0.68f);
+	else
+		color(0.15f, 0.28f, 0.38f);
+
+	for (int row = 0; row < floors; row++) {
+		for (int col = 0; col < columns; col++) {
+			float wx = x + sideMargin + col * windowWidth;
+
+			float wy = y + row * floorHeight + verticalMargin;
+
+			float ww = windowWidth * 0.62f;
+
+			float wh = floorHeight * 0.43f;
+
+			rect(wx, wy, ww, wh);
+		}
+	}
+}
+
+// ============================================================
+// BUILDING TYPE 1
+// NORMAL RECTANGULAR BUILDING
+// ============================================================
+
+// [S4-OBJ-01] Building Type 1
+void drawBuilding1(const Building &b) {
+	color(b.r, b.g, b.b);
+
+	rect(b.x, 160, b.width, b.height);
+
+	// Outline
+
+	color(0.12f, 0.18f, 0.22f);
+
+	glLineWidth(2);
+
+	glBegin(GL_LINE_LOOP);
+
+	glVertex2f(b.x, 160);
+	glVertex2f(b.x + b.width, 160);
+	glVertex2f(b.x + b.width, 160 + b.height);
+	glVertex2f(b.x, 160 + b.height);
+
+	glEnd();
+
+	windows(b.x, 160, b.width, b.height, b.floors, 3);
+}
+
+// ============================================================
+// BUILDING TYPE 2
+// GLASS TOWER
+// ============================================================
+
+// [S4-OBJ-02] Building Type 2
+void drawBuilding2(const Building &b) {
+	color(b.r, b.g, b.b);
+
+	rect(b.x, 160, b.width, b.height);
+
+	// Dark outer frame
+
+	color(0.10f, 0.20f, 0.28f);
+
+	glLineWidth(3);
+
+	glBegin(GL_LINE_LOOP);
+
+	glVertex2f(b.x, 160);
+	glVertex2f(b.x + b.width, 160);
+	glVertex2f(b.x + b.width, 160 + b.height);
+	glVertex2f(b.x, 160 + b.height);
+
+	glEnd();
+
+	// Vertical glass divisions
+
+	glLineWidth(2);
+
+	for (int i = 1; i < 4; i++) {
+		float xx = b.x + b.width * i / 4.0f;
+
+		line(xx, 160, xx, 160 + b.height);
+	}
+
+	windows(b.x, 160, b.width, b.height, b.floors, 3, true);
+}
+
+// ============================================================
+// BUILDING TYPE 3
+// STEPPED BUILDING
+// ============================================================
+
+// [S4-OBJ-03] Building Type 3
+void drawBuilding3(const Building &b) {
+	color(b.r, b.g, b.b);
+
+	float level1 = b.height * 0.70f;
+	float level2 = b.height * 0.85f;
+
+	// Bottom
+
+	rect(b.x, 160, b.width, level1);
+
+	// Middle
+
+	rect(b.x + b.width * 0.08f, 160 + level1, b.width * 0.84f, level2 - level1);
+
+	// Top
+
+	rect(b.x + b.width * 0.18f, 160 + level2, b.width * 0.64f,
+		 b.height - level2);
+
+	// Windows
+
+	windows(b.x, 160, b.width, level1, b.floors, 3);
+
+	windows(b.x + b.width * 0.08f, 160 + level1, b.width * 0.84f,
+			level2 - level1, 2, 2);
+}
+
+// ============================================================
+// BUILDING TYPE 4
+// SLANTED ROOF
+// ============================================================
+
+// [S4-OBJ-04] Building Type 4
+void drawBuilding4(const Building &b) {
+	color(b.r, b.g, b.b);
+
+	// Body
+
+	rect(b.x, 160, b.width, b.height - 35);
+
+	// Slanted roof
+
+	glBegin(GL_QUADS);
+
+	glVertex2f(b.x, 160 + b.height - 35);
+
+	glVertex2f(b.x + b.width, 160 + b.height);
+
+	glVertex2f(b.x + b.width, 160 + b.height - 15);
+
+	glVertex2f(b.x, 160 + b.height - 50);
+
+	glEnd();
+
+	windows(b.x, 160, b.width, b.height - 40, b.floors, 3, true);
+
+	color(0.10f, 0.18f, 0.24f);
+
+	glLineWidth(2);
+
+	glBegin(GL_LINE_LOOP);
+
+	glVertex2f(b.x, 160);
+	glVertex2f(b.x, 160 + b.height - 35);
+	glVertex2f(b.x + b.width, 160 + b.height);
+	glVertex2f(b.x + b.width, 160);
+
+	glEnd();
+}
+
+// ============================================================
+// TWIN TOWER
+// ============================================================
+
+// [S4-OBJ-05] Twin Tower
+void twinTower(float x, float y, float width, float height) {
+	// Main body
+
+	color(0.74f, 0.77f, 0.80f);
+
+	rect(x, y, width, height);
+
+	// Outer outline
+
+	color(0.08f, 0.15f, 0.20f);
+
+	glLineWidth(3);
+
+	glBegin(GL_LINE_LOOP);
+
+	glVertex2f(x, y);
+	glVertex2f(x + width, y);
+	glVertex2f(x + width, y + height);
+	glVertex2f(x, y + height);
+
+	glEnd();
+
+	// Vertical strips
+
+	color(0.30f, 0.48f, 0.58f);
+
+	for (int i = 1; i < 6; i++) {
+		float xx = x + width * i / 6.0f;
+
+		line(xx, y, xx, y + height);
+	}
+
+	// Windows
+
+	color(0.20f, 0.40f, 0.52f);
+
+	int floors = 22;
+	int columns = 4;
+
+	float floorHeight = height / floors;
+
+	for (int row = 0; row < floors; row++) {
+		for (int col = 0; col < columns; col++) {
+			float wx = x + 8 + col * (width - 16) / columns;
+
+			float wy = y + row * floorHeight + floorHeight * 0.25f;
+
+			rect(wx, wy, 5, floorHeight * 0.45f);
+		}
+	}
+
+	// Roof
+
+	color(0.65f, 0.68f, 0.72f);
+
+	rect(x - 3, y + height, width + 6, 7);
+
+	// Antenna
+
+	color(0.15f, 0.18f, 0.20f);
+
+	glLineWidth(3);
+
+	line(x + width / 2, y + height + 7, x + width / 2, y + height + 70);
+}
+
+// ============================================================
+// TREES
+// ============================================================
+
+// [S4-OBJ-06] Tree
+void tree(float x, float y, float scale) {
+	// Trunk
+
+	color(0.38f, 0.23f, 0.10f);
+
+	rect(x - 6 * scale, y, 12 * scale, 40 * scale);
+
+	// Leaves
+
+	color(0.12f, 0.50f, 0.18f);
+
+	circle(x, y + 65 * scale, 27 * scale);
+
+	circle(x - 20 * scale, y + 52 * scale, 22 * scale);
+
+	circle(x + 20 * scale, y + 52 * scale, 22 * scale);
+
+	circle(x, y + 87 * scale, 20 * scale);
+}
+
+// ============================================================
+// STREET LIGHT
+// ============================================================
+
+// [S4-OBJ-07] Street Light
+void streetLight(float x) {
+	color(0.12f, 0.14f, 0.16f);
+
+	glLineWidth(4);
+
+	line(x, 160, x, 235);
+
+	line(x, 235, x + 22, 235);
+
+	// Lamp
+
+	color(1.0f, 0.85f, 0.30f);
+
+	circle(x + 25, 232, 6);
+}
+
+// ============================================================
+// ROAD
+// ============================================================
+
+// [S4-OBJ-08] Road
+void drawRoad() {
+	// Grass
+
+	color(0.25f, 0.55f, 0.25f);
+
+	rect(0, 130, WIN_W, 30);
+
+	// Sidewalk
+
+	color(0.70f, 0.70f, 0.70f);
+
+	rect(0, 95, WIN_W, 35);
+
+	// Sidewalk lines
+
+	color(0.55f, 0.55f, 0.55f);
+
+	glLineWidth(1);
+
+	for (int x = 0; x <= WIN_W; x += 40) {
+		line(x, 95, x, 130);
+	}
+
+	// Road
+
+	color(0.12f, 0.13f, 0.15f);
+
+	rect(0, 0, WIN_W, 95);
+
+	// Road markings
+
+	color(0.95f, 0.85f, 0.20f);
+
+	rect(0, 45, WIN_W, 4);
+
+	color(0.95f, 0.95f, 0.95f);
+
+	for (int x = 0; x < WIN_W; x += 100) {
+		rect(x, 72, 55, 4);
+
+		rect(x, 18, 55, 4);
+	}
+}
+// ============================================================
+// BACKGROUND BUILDINGS
+// ============================================================
+
+// [S4-OBJ-09] Background Buildings
+void drawBackgroundBuildings() {
+	color(0.55f, 0.67f, 0.73f);
+
+	rect(0, 160, 80, 220);
+	rect(90, 160, 75, 260);
+
+	rect(1520, 160, 80, 250);
+
+	color(0.35f, 0.55f, 0.65f);
+
+	for (int y = 190; y < 380; y += 28) {
+		rect(15, y, 50, 9);
+		rect(105, y, 45, 9);
+		rect(1540, y, 45, 9);
+	}
+}
+
+// ============================================================
+// CITY
+// ============================================================
+
+// [S4-SCENE] City Scene
+void drawCity() {
+	// ========================================================
+	// BACKGROUND BUILDINGS
+	// ========================================================
+
+	drawBackgroundBuildings();
+
+	// ========================================================
+	// LEFT SIDE BUILDINGS
+	// ========================================================
+
+	// Building 1 - stepped building
+	Building b1 = {45, 115, 250, 0.78f, 0.72f, 0.65f, 8, 2};
+
+	drawBuilding3(b1);
+
+	// Building 2 - glass building
+	Building b2 = {175, 125, 310, 0.42f, 0.65f, 0.78f, 10, 1};
+
+	drawBuilding2(b2);
+
+	// Building 3 - normal red/brown building
+	Building b3 = {315, 100, 210, 0.78f, 0.38f, 0.32f, 7, 0};
+
+	drawBuilding1(b3);
+
+	// ========================================================
+	// LEFT TALL SKYSCRAPER
+	// ========================================================
+
+	Building b4 = {420, 105, 440, 0.65f, 0.75f, 0.82f, 14, 1};
+
+	drawBuilding1(b4);
+
+	// Antenna
+	spire(472, 160 + 440, 70);
+
+	// ========================================================
+	// SLANTED SKYSCRAPER
+	// ========================================================
+
+	Building b5 = {545, 130, 395, 0.30f, 0.52f, 0.70f, 13, 3};
+
+	drawBuilding4(b5);
+
+	// ========================================================
+	// CENTER-LEFT BUILDING
+	// ========================================================
+
+	Building b6 = {690, 135, 245, 0.72f, 0.62f, 0.52f, 8, 0};
+
+	drawBuilding1(b6);
+
+	// ========================================================
+	// CENTRAL MAIN SKYSCRAPER
+	// ========================================================
+
+	Building b7 = {840, 135, 500, 0.48f, 0.70f, 0.80f, 17, 1};
+
+	drawBuilding2(b7);
+
+	// ========================================================
+	// CENTRAL SKYSCRAPER CROWN
+	// ========================================================
+
+	float crownLeft = 840;
+	float crownRight = 975;
+	float crownBase = 160 + 500;
+	float crownTop = crownBase + 65;
+
+	color(0.62f, 0.68f, 0.73f);
+
+	glBegin(GL_TRIANGLES);
+
+	glVertex2f(crownLeft, crownBase);
+
+	glVertex2f(crownRight, crownBase);
+
+	// Center of the roof
+	glVertex2f((crownLeft + crownRight) / 2.0f, crownTop);
+
+	glEnd();
+
+	// Crown antenna
+
+	spire((crownLeft + crownRight) / 2.0f, crownTop, 75);
+
+	// ========================================================
+	// BUILDING BEFORE TWIN TOWERS
+	// ========================================================
+
+	Building b8 = {1010, 100, 330, 0.70f, 0.67f, 0.60f, 11, 2};
+
+	drawBuilding3(b8);
+
+	// ========================================================
+	// TWIN TOWERS
+	// ========================================================
+
+	// Tower 1
+
+	twinTower(1135, 160, 100, 460);
+
+	// Tower 2
+
+	twinTower(1280, 160, 100, 460);
+
+	// ========================================================
+	// RIGHT SIDE SKYSCRAPER
+	// ========================================================
+
+	Building b9 = {1410, 125, 400, 0.40f, 0.60f, 0.68f, 14, 1};
+
+	drawBuilding2(b9);
+
+	// ========================================================
+	// RIGHT SKYSCRAPER CROWN
+	// ========================================================
+
+	float rightLeft = 1410;
+	float rightRight = 1535;
+	float rightBase = 160 + 400;
+	float rightTop = rightBase + 60;
+
+	color(0.55f, 0.60f, 0.65f);
+
+	glBegin(GL_TRIANGLES);
+
+	glVertex2f(rightLeft, rightBase);
+
+	glVertex2f(rightRight, rightBase);
+
+	glVertex2f((rightLeft + rightRight) / 2.0f, rightTop);
+
+	glEnd();
+
+	// Right antenna
+
+	spire((rightLeft + rightRight) / 2.0f, rightTop, 65);
+
+	// ========================================================
+	// FAR RIGHT BUILDING
+	// ========================================================
+
+	Building b10 = {1530, 70, 260, 0.68f, 0.38f, 0.35f, 9, 0};
+
+	drawBuilding1(b10);
+
+	// ========================================================
+	// FRONT BUILDINGS
+	// These make the skyline feel denser.
+	// ========================================================
+
+	Building front1 = {55, 75, 160, 0.82f, 0.70f, 0.55f, 5, 0};
+
+	drawBuilding1(front1);
+
+	Building front2 = {250, 80, 190, 0.70f, 0.42f, 0.40f, 6, 0};
+
+	drawBuilding1(front2);
+
+	Building front3 = {610, 85, 170, 0.76f, 0.65f, 0.50f, 5, 0};
+
+	drawBuilding1(front3);
+
+	Building front4 = {970, 90, 185, 0.50f, 0.66f, 0.72f, 6, 1};
+
+	drawBuilding2(front4);
+
+	Building front5 = {1080, 80, 160, 0.80f, 0.48f, 0.45f, 5, 0};
+
+	drawBuilding1(front5);
+
+	Building front6 = {1370, 70, 145, 0.70f, 0.55f, 0.50f, 5, 0};
+
+	drawBuilding1(front6);
+}
+// ============================================================
+// TREES
+// ============================================================
+
+// [S4-COMP-01] Tree Arrangement
+void drawTrees() {
+	// ========================================================
+	// LEFT SIDE
+	// ========================================================
+
+	tree(35, 160, 1.0f);
+
+	tree(145, 160, 0.85f);
+
+	tree(285, 160, 0.90f);
+
+	// ========================================================
+	// LEFT-CENTER
+	// ========================================================
+
+	tree(390, 160, 0.75f);
+
+	tree(525, 160, 0.95f);
+
+	tree(660, 160, 0.80f);
+
+	// ========================================================
+	// CENTER
+	// ========================================================
+
+	tree(790, 160, 0.90f);
+
+	tree(1000, 160, 0.75f);
+
+	// ========================================================
+	// AROUND TWIN TOWERS
+	// ========================================================
+
+	tree(1090, 160, 0.95f);
+
+	tree(1250, 160, 0.80f);
+
+	tree(1400, 160, 0.95f);
+
+	// ========================================================
+	// RIGHT SIDE
+	// ========================================================
+
+	tree(1530, 160, 0.85f);
+
+	tree(1580, 160, 0.75f);
+}
+
+// ============================================================
+// STREET LIGHTS
+// ============================================================
+
+// [S4-COMP-02] Street Light Arrangement
+void drawStreetLights() {
+	streetLight(80);
+	streetLight(300);
+	streetLight(520);
+	streetLight(740);
+	streetLight(960);
+	streetLight(1140);
+	streetLight(1360);
+	streetLight(1580);
+}
+
+// [S4-RENDER] Render Scene 4
+void renderScene4() {
+	glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glPushMatrix();
+	glTranslatef(550.0f, 250.0f, 0.0f);
+	sun();
+	glPopMatrix();
+
+	drawClouds();
+
+	drawMountains();
+	drawHills();
+	drawGroundAndPath();
+
+	drawCity();
+	drawStreetLights();
+	drawRoad();
+	drawTrees();
+}
+
 void display() {
-	renderScene2();
+	renderScene4();
 	glFlush();
 };
 
+// [GLOBAL-ANM-01] Animation Update Loop
 void update(int value) {
+	// [S1-ANM-01] Cloud Movement
 	cloudOffset += CLOUD_SPEED;
+	// [S2-ANM-01] Fire Flickering
 	firePhase += FIRE_SPEED;
+	// [S2-ANM-02] Smoke Drift
 	smokeOffset += SMOKE_DRIFT_SPEED;
 	glutPostRedisplay();
 	glutTimerFunc(16, update, 0);
 }
 
+// [GLOBAL-ANM-02] Keyboard Input Handler
 void keyboard(unsigned char key, int x, int y) {
 	if (key == 'n' || key == 'N') {
 		isNightMode = true;
@@ -1603,7 +2379,6 @@ void keyboard(unsigned char key, int x, int y) {
 }
 
 void init() {
-	// Soft sunny sky blue matching the photo
 	glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
