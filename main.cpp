@@ -62,7 +62,7 @@ void circle(float cx, float cy, float radius, int segments = 30) {
 // RAW-POINT CRANE MODEL (LOCAL ORIGIN 0,0)
 // ============================================================
 
-void drawRawCraneModel() {
+void drawCraneModel() {
     glLineWidth(1.6f);
 
     // 1. Base Foundation Slab & Legs
@@ -173,7 +173,7 @@ void drawTranslatedCrane(float x, float y, float scaleX = 1.0f, float scaleY = 1
     if (scaleX != 1.0f || scaleY != 1.0f) {
         glScalef(scaleX, scaleY, 1.0f);
     }
-    drawRawCraneModel();
+    drawCraneModel();
     glPopMatrix();
 }
 
@@ -331,110 +331,124 @@ void drawHalfConstructedBuilding(const Building& b, float progress) {
         glLineWidth(1.0f);
     }
 }
-
 // ============================================================
-// 2. HEAVY STEEL SUPERSTRUCTURE (FOR THE 2 LARGEST TOWERS)
+// 1. LEFT SUPERSTRUCTURE (SHORTER TOWER)
 // ============================================================
+void drawSteelSuperstructure(float x, float y, float scaleX = 1.0f, float scaleY = 1.0f) {
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scaleX, scaleY, 1.0f); // Scales width and height uniformly or non-uniformly
 
-void drawHeavySteelSuperstructure(const Building& b, float progress) {
-    float currentHeight = b.height * progress;
-    float floorHeight = b.height / b.floors;
-    int completedFloors = (int)(currentHeight / floorHeight);
+    // --------------------------------------------------------
+    // A. BACKGROUND ELEVATOR CORES (GL_POLYGON)
+    // --------------------------------------------------------
+    glColor3f(0.55f, 0.65f, 0.72f);
 
-    // 1. Lower completed building structure
-    setColor(b.r, b.g, b.b);
-    rect(b.x, b.y, b.width, currentHeight);
-
-    // Concrete floor slabs
-    setColor(0.30f, 0.32f, 0.34f);
-    for (int i = 0; i <= completedFloors; i++) {
-        float y = b.y + i * floorHeight;
-        if (y <= b.y + currentHeight) {
-            rect(b.x - 4, y, b.width + 8, 5);
-        }
-    }
-
-    // Windows on completed lower floors
-    setColor(0.75f, 0.88f, 0.93f);
-    int columns = 3;
-    float colSpacing = b.width / (columns + 1);
-    for (int floor = 0; floor < completedFloors; floor++) {
-        float y = b.y + floor * floorHeight + 10;
-        for (int c = 0; c < columns; c++) {
-            float x = b.x + colSpacing * (c + 1) - 8;
-            rect(x, y, 16, floorHeight * 0.40f);
-        }
-    }
-
-    // 2. Heavy Steel Skeleton Superstructure (Matching Image Reference)
-    float steelTopY = b.y + b.height;
-    float colW = 8.0f;
-    float beamH = 7.0f;
-
-    // Steel beam colors
-    const float steelR = 0.38f, steelG = 0.45f, steelB = 0.50f;
-    const float darkSteelR = 0.22f, darkSteelG = 0.28f, darkSteelB = 0.32f;
-
-    // Background exposed towers / lift core behind steel cage
-    setColor(0.55f, 0.65f, 0.72f);
-    rect(b.x + colSpacing * 0.6f, b.y + currentHeight, colSpacing * 0.8f, b.height * (1.0f - progress) * 0.85f);
-    rect(b.x + colSpacing * 1.8f, b.y + currentHeight, colSpacing * 0.8f, b.height * (1.0f - progress) * 0.95f);
-
-    // Structural steel bays
-    float colX0 = b.x + 2;
-    float colX1 = b.x + b.width * 0.33f;
-    float colX2 = b.x + b.width * 0.66f;
-    float colX3 = b.x + b.width - colW - 2;
-
-    // Stored cargo pallets / construction materials on upper steel deck
-    setColor(0.60f, 0.42f, 0.22f);
-    rect(colX0 + 12, b.y + currentHeight + 6, 28, 20);
-    rect(colX1 + 10, b.y + currentHeight + 6, 22, 14);
-
-    // Thick Vertical Steel Columns
-    setColor(steelR, steelG, steelB);
-    rect(colX0, b.y + currentHeight, colW, steelTopY - (b.y + currentHeight));
-    rect(colX1, b.y + currentHeight, colW, steelTopY - (b.y + currentHeight));
-    rect(colX2, b.y + currentHeight, colW, steelTopY - (b.y + currentHeight) * 0.9f);
-    rect(colX3, b.y + currentHeight, colW, (steelTopY - (b.y + currentHeight)) * 0.7f);
-
-    // Thick Horizontal Steel I-Beams
-    for (float y = b.y + currentHeight + floorHeight; y < steelTopY; y += floorHeight) {
-        float bWidth = (y < b.y + currentHeight + floorHeight * 2) ? b.width : b.width * 0.68f;
-        setColor(steelR, steelG, steelB);
-        rect(b.x, y, bWidth, beamH);
-
-        // Beam outline accent
-        setColor(darkSteelR, darkSteelG, darkSteelB);
-        line(b.x, y, b.x + bWidth, y);
-        line(b.x, y + beamH, b.x + bWidth, y + beamH);
-    }
-
-    // Heavy Diagonal Cross-Bracing Girders (As shown in image)
-    glLineWidth(4.0f);
-    setColor(steelR * 0.9f, steelG * 0.9f, steelB * 0.9f);
-    glBegin(GL_LINES);
-    // Middle bay diagonal brace
-    glVertex2f(colX1 + colW, b.y + currentHeight + beamH);
-    glVertex2f(colX2, b.y + currentHeight + floorHeight);
-
-    // Upper bay diagonal brace
-    glVertex2f(colX1 + colW, b.y + currentHeight + floorHeight + beamH);
-    glVertex2f(colX2, b.y + currentHeight + floorHeight * 2);
-
-    // Top structural diagonal brace
-    glVertex2f(colX1 + colW, b.y + currentHeight + floorHeight * 2 + beamH);
-    glVertex2f(colX2, b.y + currentHeight + floorHeight * 3);
+    // Left core shaft
+    glBegin(GL_POLYGON);
+    glVertex2f(18.0f, 0.0f);
+    glVertex2f(40.0f, 0.0f);
+    glVertex2f(40.0f, 230.0f);
+    glVertex2f(18.0f, 230.0f);
     glEnd();
 
-    // Dark edge accents on columns
+    // Right core shaft
+    glBegin(GL_POLYGON);
+    glVertex2f(54.0f, 0.0f);
+    glVertex2f(78.0f, 0.0f);
+    glVertex2f(78.0f, 255.0f);
+    glVertex2f(54.0f, 255.0f);
+    glEnd();
+
+    // --------------------------------------------------------
+    // B. CARGO PALLET BOXES (GL_POLYGON)
+    // --------------------------------------------------------
+    glColor3f(0.60f, 0.42f, 0.22f);
+
+    // Left Box
+    glBegin(GL_POLYGON);
+    glVertex2f(12.0f, 4.0f);
+    glVertex2f(38.0f, 4.0f);
+    glVertex2f(38.0f, 22.0f);
+    glVertex2f(12.0f, 22.0f);
+    glEnd();
+
+    // Right Box
+    glBegin(GL_POLYGON);
+    glVertex2f(48.0f, 4.0f);
+    glVertex2f(70.0f, 4.0f);
+    glVertex2f(70.0f, 16.0f);
+    glVertex2f(48.0f, 16.0f);
+    glEnd();
+
+    // --------------------------------------------------------
+    // C. VERTICAL STEEL COLUMNS (GL_QUADS)
+    // --------------------------------------------------------
+    glColor3f(0.38f, 0.45f, 0.50f);
+    glBegin(GL_QUADS);
+    // Column 1 (Left edge)
+    glVertex2f(2.0f, 0.0f); glVertex2f(8.0f, 0.0f);
+    glVertex2f(8.0f, 260.0f); glVertex2f(2.0f, 260.0f);
+
+    // Column 2 (Middle)
+    glVertex2f(42.0f, 0.0f); glVertex2f(48.0f, 0.0f);
+    glVertex2f(48.0f, 260.0f); glVertex2f(42.0f, 260.0f);
+
+    // Column 3 (Right mast - tallest top extension)
+    glVertex2f(82.0f, 0.0f); glVertex2f(88.0f, 0.0f);
+    glVertex2f(88.0f, 295.0f); glVertex2f(82.0f, 295.0f);
+
+    // Column 4 (Right cantilever column)
+    glVertex2f(118.0f, 20.0f); glVertex2f(124.0f, 20.0f);
+    glVertex2f(124.0f, 165.0f); glVertex2f(118.0f, 165.0f);
+    glEnd();
+
+    // --------------------------------------------------------
+    // D. HORIZONTAL STEEL BEAMS (GL_QUADS)
+    // --------------------------------------------------------
+    glBegin(GL_QUADS);
+    // 8 Main floor beams
+    for (int i = 1; i <= 8; i++) {
+        float yPos = i * 28.0f;
+        glVertex2f(2.0f, yPos);
+        glVertex2f(88.0f, yPos);
+        glVertex2f(88.0f, yPos + 6.0f);
+        glVertex2f(2.0f, yPos + 6.0f);
+    }
+
+    // Extended lower cantilever beam
+    glVertex2f(88.0f, 30.0f);
+    glVertex2f(128.0f, 30.0f);
+    glVertex2f(128.0f, 36.0f);
+    glVertex2f(88.0f, 36.0f);
+    glEnd();
+
+    // --------------------------------------------------------
+    // E. DIAGONAL CROSS-BRACING GIRDERS (GL_LINES)
+    // --------------------------------------------------------
+    glLineWidth(4.0f);
+    glColor3f(0.32f, 0.38f, 0.44f);
+    glBegin(GL_LINES);
+    glVertex2f(48.0f, 6.0f); glVertex2f(82.0f, 28.0f);
+    glVertex2f(48.0f, 34.0f); glVertex2f(82.0f, 56.0f);
+    glVertex2f(48.0f, 62.0f); glVertex2f(82.0f, 84.0f);
+    glEnd();
+
+    // --------------------------------------------------------
+    // F. OUTLINE ACCENTS (GL_LINES)
+    // --------------------------------------------------------
     glLineWidth(1.0f);
-    setColor(darkSteelR, darkSteelG, darkSteelB);
-    line(colX0, b.y + currentHeight, colX0, steelTopY);
-    line(colX1, b.y + currentHeight, colX1, steelTopY);
-    line(colX2, b.y + currentHeight, colX2, steelTopY - 30);
-    line(colX3, b.y + currentHeight, colX3, steelTopY - 90);
+    glColor3f(0.20f, 0.25f, 0.28f);
+    glBegin(GL_LINES);
+    glVertex2f(2.0f, 0.0f); glVertex2f(2.0f, 260.0f);
+    glVertex2f(42.0f, 0.0f); glVertex2f(42.0f, 260.0f);
+    glVertex2f(82.0f, 0.0f); glVertex2f(82.0f, 295.0f);
+    glVertex2f(118.0f, 20.0f); glVertex2f(118.0f, 165.0f);
+    glEnd();
+
+    glPopMatrix();
 }
+
 
 // ============================================================
 // ACCESSORIES & TREES
@@ -522,8 +536,9 @@ void drawPartialCity() {
     // ========================================================
     // LARGEST BUILDING #1 (HEAVY STEEL SUPERSTRUCTURE WITH BRACES)
     // ========================================================
-    Building tower1 = { 670, 160, 130, 460, 0.48f, 0.68f, 0.76f, 14, 1 };
-    drawHeavySteelSuperstructure(tower1, 0.48f);
+    Building tower1 = { 670, 160, 140, 150, 0.48f, 0.68f, 0.76f, 5, 1 };
+    buildingNormal(tower1);
+    drawSteelSuperstructure(tower1.x + 5.0f, tower1.y + tower1.height, 0.90f, 0.78f);
 
     // Small/Medium Buildings (Cleaned up with short rebar stubs)
     Building tower2 = { 420, 160, 115, 360, 0.35f, 0.55f, 0.68f, 12, 2 };
@@ -535,8 +550,10 @@ void drawPartialCity() {
     // ========================================================
     // LARGEST BUILDING #2 (MAIN CENTRAL TALL TOWER)
     // ========================================================
-    Building central = { 830, 160, 145, 520, 0.45f, 0.66f, 0.76f, 17, 1 };
-    drawHeavySteelSuperstructure(central, 0.38f);
+    Building central = { 830, 160, 140, 200, 0.45f, 0.66f, 0.76f, 6, 1 };
+    buildingNormal(central);
+    drawSteelSuperstructure(central.x + 5.0f, central.y + central.height, 1.05f, 1.0f);
+
 
     Building centerRight = { 995, 160, 115, 280, 0.72f, 0.62f, 0.52f, 9, 0 };
     buildingNormal(centerRight);
