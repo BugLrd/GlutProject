@@ -34,12 +34,10 @@ bool flashActive = false;
 float planeX = -350.0f;
 float planeY = 780.0f;
 const float PLANE_SPEED = 4.0f;
-const int NUM_BOMBS = 5;
-float bombX[NUM_BOMBS] = {0};
-float bombY[NUM_BOMBS] = {0};
-bool bombDropped[NUM_BOMBS] = {false, false, false, false, false};
-bool bombHit[NUM_BOMBS] = {false, false, false, false, false};
-float bombDropPosition[NUM_BOMBS] = {200.0f, 500.0f, 800.0f, 1100.0f, 1400.0f};
+float bombX = 0.0f;
+float bombY = 0.0f;
+bool bombDropped = false;
+bool bombHit = false;
 float flashTimer = 0.0f;
 float transitionTimer = 0.0f;
 
@@ -57,12 +55,21 @@ const float CRASH_TARGET_Y = 500.0f;
 bool rainMode = false;
 float rainOffset = 0.0f;
 
+// Shared functions used by scene-specific callback clusters.
+void drawRain();
+void switchScene(int scene);
+
+void handleEnvironmentKey(unsigned char key) {
+	if (key == 'd' || key == 'D')
+		isNightMode = false;
+	else if (key == 'n' || key == 'N')
+		isNightMode = true;
+	else if (key == 'r' || key == 'R')
+		rainMode = !rainMode;
+}
+
 //------------------------- Basic Drawing Helpers -------------------------
-// ============================================================
-// DRAWING HELPERS
-// These are primitive reusable functions.
-// No Object IDs assigned.
-// ============================================================
+
 void drawRect(float x1, float y1, float x2, float y2) {
 	glBegin(GL_QUADS);
 	glVertex2f(x1, y1);
@@ -233,11 +240,10 @@ void resetBombingAnimation() {
 	planeY = 780.0f;
 	flashTimer = 0;
 	transitionTimer = 0;
-	for (int i = 0; i < NUM_BOMBS; i++) {
-		bombX[i] = bombY[i] = 0;
-		bombDropped[i] = false;
-		bombHit[i] = false;
-	}
+	bombX = 0.0f;
+	bombY = 0.0f;
+	bombDropped = false;
+	bombHit = false;
 }
 
 //------------------------- Structs & Colors -------------------------
@@ -1021,18 +1027,89 @@ void scene1() {
 	drawTree(1560.0f, 100.0f, 1.2f);
 }
 
-// [S1-RENDER] Render Scene 1
-void renderScene1() {
-	if (isNightMode) {
+void scene1Display() {
+	if (isNightMode)
 		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
-	} else {
+	else
 		glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
-	}
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	scene1();
-	if (isNightMode) {
-		drawNightOverlay();
+
+	if (bombingStarted) {
+		drawCargoPlane(planeX, planeY, 0.8f);
+		if (bombDropped && !bombHit)
+			drawBomb(bombX, bombY);
+		if (flashActive)
+			drawExplosionFlash();
 	}
+
+	if (isNightMode)
+		drawNightOverlay();
+	drawRain();
+}
+
+void scene1Update() {
+	cloudOffset += CLOUD_SPEED;
+
+	if (rainMode) {
+		rainOffset += 18.0f;
+		if (rainOffset > WIN_H + 120.0f)
+			rainOffset = 0.0f;
+	}
+
+	if (bombingStarted) {
+		planeX += PLANE_SPEED;
+
+		if (!bombDropped && planeX + 20.0f >= bombX) {
+			bombDropped = true;
+			bombY = planeY - 45.0f;
+		}
+
+		if (bombDropped && !bombHit) {
+			bombY -= 9.0f;
+			if (bombY <= 160.0f) {
+				bombY = 160.0f;
+				bombHit = true;
+				flashActive = true;
+				flashTimer = 1.2f;
+			}
+		}
+
+		if (flashActive) {
+			flashTimer -= 0.016f;
+			if (flashTimer <= 0.0f) {
+				flashTimer = 0.0f;
+				flashActive = false;
+			}
+		}
+
+		if (bombHit && !flashActive) {
+			transitionTimer += 0.056f;
+			if (transitionTimer > 0.5f) {
+				bombingStarted = false;
+				currentScene = 2;
+			}
+		}
+	}
+}
+
+void scene1Keyboard(unsigned char key, int, int) { handleEnvironmentKey(key); }
+
+void scene1Mouse(int button, int state, int x, int) {
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !bombingStarted) {
+		resetBombingAnimation();
+		int windowWidth = std::max(1, glutGet(GLUT_WINDOW_WIDTH));
+		bombX = static_cast<float>(x) * WIN_W / windowWidth;
+		bombingStarted = true;
+	}
+}
+
+void scene1SpecialKeys(int key, int, int) {
+	if (key == GLUT_KEY_RIGHT)
+		switchScene(2);
+	else if (key == GLUT_KEY_LEFT)
+		switchScene(4);
 }
 
 //---------------------------END OF SCENE1-------------------------
@@ -1918,11 +1995,36 @@ void scene2() {
 	drawSmoke(880.0f, 275.0f, 0.7f);
 }
 
-// ---------------------- Scene2 rendering ----------------------
-void renderScene2() {
+void scene2Display() {
 	glClearColor(0.45f, 0.38f, 0.32f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	scene2();
+	if (isNightMode)
+		drawNightOverlay();
+	drawRain();
+}
+
+void scene2Update() {
+	cloudOffset += CLOUD_SPEED;
+	firePhase += FIRE_SPEED;
+	smokeOffset += SMOKE_DRIFT_SPEED;
+
+	if (rainMode) {
+		rainOffset += 18.0f;
+		if (rainOffset > WIN_H + 120.0f)
+			rainOffset = 0.0f;
+	}
+}
+
+void scene2Keyboard(unsigned char key, int, int) { handleEnvironmentKey(key); }
+
+void scene2Mouse(int, int, int, int) {}
+
+void scene2SpecialKeys(int key, int, int) {
+	if (key == GLUT_KEY_RIGHT)
+		switchScene(3);
+	else if (key == GLUT_KEY_LEFT)
+		switchScene(1);
 }
 
 //===============================scene3===================================================
@@ -2500,8 +2602,18 @@ void drawConstructionSign(float x, float y) {
 // ============================================================
 
 void drawPartialCity() {
-	drawSky();
+
+	glPushMatrix();
+	glTranslatef(550.0f, 250.0f, 0.0f);
+	sun();
+	glPopMatrix();
+
+	drawClouds();
+
+	drawMountains();
+	drawHills();
 	drawGround();
+
 	drawBackgroundBuildings();
 
 	// Established Completed Buildings
@@ -2575,6 +2687,41 @@ void drawPartialCity() {
 	drawConstructionSign(1080, 165);
 
 	drawTrees();
+}
+
+void scene3Display() {
+	if (isNightMode)
+		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
+	else
+		glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+	drawPartialCity();
+
+	if (isNightMode)
+		drawNightOverlay();
+	drawRain();
+}
+
+void scene3Update() {
+
+	cloudOffset += CLOUD_SPEED;
+	if (rainMode) {
+		rainOffset += 18.0f;
+		if (rainOffset > WIN_H + 120.0f)
+			rainOffset = 0.0f;
+	}
+}
+
+void scene3Keyboard(unsigned char key, int, int) { handleEnvironmentKey(key); }
+
+void scene3Mouse(int, int, int, int) {}
+
+void scene3SpecialKeys(int key, int, int) {
+	if (key == GLUT_KEY_RIGHT)
+		switchScene(4);
+	else if (key == GLUT_KEY_LEFT)
+		switchScene(2);
 }
 
 //==============================scene4===================================================
@@ -3100,28 +3247,14 @@ void drawRain() {
 	glDisable(GL_BLEND);
 }
 
-// ---------------------- Scene3 rendering ----------------------
-void renderScene3() {
+//===============================scene4===================================================
+
+void scene4Display() {
 	if (isNightMode)
 		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
 	else
 		glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
 
-	glClear(GL_COLOR_BUFFER_BIT);
-	drawPartialCity();
-
-	if (isNightMode)
-		drawNightOverlay();
-}
-
-// SCENE COMPOSITION & CALLBACKS
-
-void renderScene4() {
-	if (isNightMode) {
-		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
-	} else {
-		glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
-	}
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glPushMatrix();
@@ -3132,7 +3265,6 @@ void renderScene4() {
 	drawClouds();
 	drawMountains();
 	drawHills();
-
 	drawCity();
 	drawStreetLights();
 	drawRoad();
@@ -3142,52 +3274,13 @@ void renderScene4() {
 		drawCrashPlane(crashPlaneX, crashPlaneY);
 	drawCrashEffect();
 
-	if (isNightMode) {
+	if (isNightMode)
 		drawNightOverlay();
-	}
-}
-
-void display() {
-	if (currentScene == 1) {
-		if (isNightMode)
-			glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
-		else
-			glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
-
-		glClear(GL_COLOR_BUFFER_BIT);
-		scene1();
-
-		if (bombingStarted) {
-			drawCargoPlane(planeX, planeY, 0.8f);
-			for (int i = 0; i < NUM_BOMBS; i++)
-				if (bombDropped[i] && !bombHit[i])
-					drawBomb(bombX[i], bombY[i]);
-
-			if (flashActive)
-				drawExplosionFlash();
-		}
-
-		if (isNightMode)
-			drawNightOverlay();
-	} else if (currentScene == 2) {
-		renderScene2();
-		if (isNightMode)
-			drawNightOverlay();
-	} else if (currentScene == 3) {
-		renderScene3();
-	} else if (currentScene == 4) {
-		renderScene4();
-	}
-
-	// Rain is drawn last so it appears over every scene.
 	drawRain();
-	glFlush();
 }
 
-void update(int value) {
+void scene4Update() {
 	cloudOffset += CLOUD_SPEED;
-	firePhase += FIRE_SPEED;
-	smokeOffset += SMOKE_DRIFT_SPEED;
 
 	if (rainMode) {
 		rainOffset += 18.0f;
@@ -3195,12 +3288,11 @@ void update(int value) {
 			rainOffset = 0.0f;
 	}
 
-	if (crashStarted && currentScene == 4) {
+	if (crashStarted) {
 		if (!crashImpacted) {
 			crashPlaneX += CRASH_PLANE_SPEED;
 			crashPlaneY -= 1.45f;
 
-			// The plane's nose reaches the left face of the first tower.
 			if (crashPlaneX + 76.0f >= CRASH_TARGET_X) {
 				crashImpacted = true;
 				crashEffectTimer = 0.0f;
@@ -3209,48 +3301,58 @@ void update(int value) {
 			crashEffectTimer += 0.016f;
 		}
 	}
+}
 
-	if (bombingStarted && currentScene == 1) {
-		planeX += PLANE_SPEED;
+void scene4Keyboard(unsigned char key, int, int) {
+	if (key == 'p' || key == 'P')
+		startCrashAnimation();
+	else
+		handleEnvironmentKey(key);
+}
 
-		for (int i = 0; i < NUM_BOMBS; i++) {
-			if (!bombDropped[i] && planeX >= bombDropPosition[i]) {
-				bombDropped[i] = true;
-				bombX[i] = planeX + 20.0f;
-				bombY[i] = planeY - 45.0f;
-			}
+void scene4Mouse(int, int, int, int) {}
 
-			if (bombDropped[i] && !bombHit[i]) {
-				bombY[i] -= 9.0f;
-				if (bombY[i] <= 160.0f) {
-					bombY[i] = 160.0f;
-					bombHit[i] = true;
-					flashActive = true;
-					flashTimer = 1.2f;
-				}
-			}
-		}
+void scene4SpecialKeys(int key, int, int) {
+	if (key == GLUT_KEY_RIGHT)
+		switchScene(1);
+	else if (key == GLUT_KEY_LEFT)
+		switchScene(3);
+}
 
-		if (flashActive) {
-			flashTimer -= 0.016f;
-			if (flashTimer <= 0.0f) {
-				flashTimer = 0.0f;
-				flashActive = false;
-			}
-		}
+// The general display callback only selects the active scene.
+void display() {
+	switch (currentScene) {
+	case 1:
+		scene1Display();
+		break;
+	case 2:
+		scene2Display();
+		break;
+	case 3:
+		scene3Display();
+		break;
+	case 4:
+		scene4Display();
+		break;
+	}
+	glFlush();
+}
 
-		bool allBombsHit = true;
-		for (int i = 0; i < NUM_BOMBS; i++)
-			if (!bombHit[i])
-				allBombsHit = false;
-
-		if (allBombsHit && !flashActive) {
-			transitionTimer += 0.056f;
-			if (transitionTimer > 0.5f) {
-				bombingStarted = false;
-				currentScene = 2;
-			}
-		}
+// The general timer callback only updates the active scene.
+void update(int) {
+	switch (currentScene) {
+	case 1:
+		scene1Update();
+		break;
+	case 2:
+		scene2Update();
+		break;
+	case 3:
+		scene3Update();
+		break;
+	case 4:
+		scene4Update();
+		break;
 	}
 
 	glutPostRedisplay();
@@ -3274,38 +3376,61 @@ void switchScene(int scene) {
 	glutPostRedisplay();
 }
 
-// Mouse click starts the bombing only in Scene 1.
 void mouse(int button, int state, int x, int y) {
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && currentScene == 1 &&
-		!bombingStarted) {
-		resetBombingAnimation();
-		bombingStarted = true;
+	switch (currentScene) {
+	case 1:
+		scene1Mouse(button, state, x, y);
+		break;
+	case 2:
+		scene2Mouse(button, state, x, y);
+		break;
+	case 3:
+		scene3Mouse(button, state, x, y);
+		break;
+	case 4:
+		scene4Mouse(button, state, x, y);
+		break;
 	}
-
 	glutPostRedisplay();
 }
 
-// Arrow keys move through scenes.
 void specialKeys(int key, int x, int y) {
-	if (key == GLUT_KEY_RIGHT)
-		switchScene(currentScene == 4 ? 1 : currentScene + 1);
-	else if (key == GLUT_KEY_LEFT)
-		switchScene(currentScene == 1 ? 4 : currentScene - 1);
+	switch (currentScene) {
+	case 1:
+		scene1SpecialKeys(key, x, y);
+		break;
+	case 2:
+		scene2SpecialKeys(key, x, y);
+		break;
+	case 3:
+		scene3SpecialKeys(key, x, y);
+		break;
+	case 4:
+		scene4SpecialKeys(key, x, y);
+		break;
+	}
 }
 
-// D = day, N = night, R = rain, P = Scene 4 plane animation, 1-4 = scene.
+// Number keys are shared navigation; all other keys go to the active scene.
 void keyboard(unsigned char key, int x, int y) {
-	if ((key == 'p' || key == 'P') && currentScene == 4)
-		startCrashAnimation();
-	else if (key == 'd' || key == 'D')
-		isNightMode = false;
-	else if (key == 'n' || key == 'N')
-		isNightMode = true;
-	else if (key == 'r' || key == 'R')
-		rainMode = !rainMode;
-	else if (key >= '1' && key <= '4')
+	if (key >= '1' && key <= '4') {
 		switchScene(key - '0');
-
+	} else {
+		switch (currentScene) {
+		case 1:
+			scene1Keyboard(key, x, y);
+			break;
+		case 2:
+			scene2Keyboard(key, x, y);
+			break;
+		case 3:
+			scene3Keyboard(key, x, y);
+			break;
+		case 4:
+			scene4Keyboard(key, x, y);
+			break;
+		}
+	}
 	glutPostRedisplay();
 }
 
