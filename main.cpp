@@ -13,22 +13,21 @@
 #define MAX_RAINDROPS 300
 
 //-------------------------------------------------------------------------------------SCENE1------------------------------------------------------------------------------------------------------
-// Toggled with 'n' (night) and 'd' (day) keys
+
 bool isNightMode = false;
 // Horizontal drift offset for the clouds, advanced each frame by update()
 float cloudOffset = 0.0f;
 const float CLOUD_SPEED = 0.5f;
 
-// Animation state for scene2's fire/smoke (advanced each frame by update())
+
 float firePhase = 0.0f;
 const float FIRE_SPEED = 0.12f;
 const float SMOKE_DRIFT_SPEED = 0.25f;
-// Drift accumulator for rising/swaying smoke puffs in Scene 2
 float smokeOffset = 0.0f;
 
-// ============================================================
-// BOMBING ANIMATION STATE
-// ============================================================
+
+// BOMBING 
+
 int currentScene = 1;
 bool bombingStarted = false;
 bool planePassOnly = false;
@@ -43,7 +42,7 @@ bool bombHit = false;
 float flashTimer = 0.0f;
 float transitionTimer = 0.0f;
 
-// Simple, non-graphic plane crash animation for Scene 4 (press P).
+// crash animation for Scene 4 
 bool crashStarted = false;
 bool crashImpacted = false;
 float crashPlaneX = -140.0f;
@@ -53,555 +52,551 @@ const float CRASH_PLANE_SPEED = 7.0f;
 const float CRASH_TARGET_X = 1135.0f;
 const float CRASH_TARGET_Y = 500.0f;
 
-// Global weather state for all scenes
+//  weather
 float rainX[MAX_RAINDROPS];
 float rainY[MAX_RAINDROPS];
 bool rainMode = false;
 
-// Car drifts along the lower road lane, wrapping from left to right.
+// Car 
 float carX = -250.0f;
 const float CAR_SPEED = 3.0f;
 const float CAR_SCALE = 28.0f;
 const float CAR_LANE_Y =
-	15.0f; // baseline height of the car on the lower road lane
+15.0f;
 
-// Second car: moves from right to left on the upper road lane.
+
 float car2X = (float)WIN_W + 250.0f;
 const float CAR2_SPEED = 3.0f;
 const float CAR2_SCALE = 28.0f;
 const float CAR2_LANE_Y = 65.0f;
 
-// Shared functions used by scene-specific callback clusters.
 void initRain();
 void updateRain();
 void drawRain();
 void switchScene(int scene);
 
 void handleEnvironmentKey(unsigned char key) {
-	if (key == 'd' || key == 'D')
-		isNightMode = false;
-	else if (key == 'n' || key == 'N')
-		isNightMode = true;
-	else if (key == 'r' || key == 'R')
-		rainMode = !rainMode;
+    if (key == 'd' || key == 'D')
+        isNightMode = false;
+    else if (key == 'n' || key == 'N')
+        isNightMode = true;
+    else if (key == 'r' || key == 'R')
+        rainMode = !rainMode;
 }
 
 //------------------------- Basic Drawing Helpers -------------------------
 
 void drawRect(float x1, float y1, float x2, float y2) {
-	glBegin(GL_QUADS);
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y1);
-	glVertex2f(x2, y2);
-	glVertex2f(x1, y2);
-	glEnd();
+    glBegin(GL_QUADS);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y1);
+    glVertex2f(x2, y2);
+    glVertex2f(x1, y2);
+    glEnd();
 }
 
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3) {
-	glBegin(GL_TRIANGLES);
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y2);
-	glVertex2f(x3, y3);
-	glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y2);
+    glVertex2f(x3, y3);
+    glEnd();
 }
 
 void drawCircle(float cx, float cy, float r, int segments = 30) {
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(cx, cy);
-	for (int i = 0; i <= segments; i++) {
-		float angle = 2.0f * (float)PI * i / segments;
-		glVertex2f(cx + r * cosf(angle), cy + r * sinf(angle));
-	}
-	glEnd();
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(cx, cy);
+    for (int i = 0; i <= segments; i++) {
+        float angle = 2.0f * (float)PI * i / segments;
+        glVertex2f(cx + r * cosf(angle), cy + r * sinf(angle));
+    }
+    glEnd();
 }
 
 // Helper for smooth rounded mountain domes
 void drawMountainDome(float cx, float cy, float rx, float ry, float r, float g,
-					  float b) {
-	glColor3f(r, g, b);
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(cx, cy);
-	for (int i = 0; i <= 36; i++) {
-		float angle = (float)PI * i / 36.0f; // 0 to PI (top half dome)
-		glVertex2f(cx + rx * cosf(angle), cy + ry * sinf(angle));
-	}
-	glEnd();
+    float b) {
+    glColor3f(r, g, b);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(cx, cy);
+    for (int i = 0; i <= 36; i++) {
+        float angle = (float)PI * i / 36.0f; // 0 to PI (top half dome)
+        glVertex2f(cx + rx * cosf(angle), cy + ry * sinf(angle));
+    }
+    glEnd();
 }
 
 void drawHill(float cx, float cy, float rx, float ry, float r, float g,
-			  float b) {
-	glColor3f(r, g, b);
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(cx, cy);
-	for (int i = 0; i <= 30; i++) {
-		float angle = (float)PI * i / 30.0f; // 0 to PI (top half curve)
-		glVertex2f(cx + rx * cosf(angle), cy + ry * sinf(angle));
-	}
-	glEnd();
+    float b) {
+    glColor3f(r, g, b);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(cx, cy);
+    for (int i = 0; i <= 30; i++) {
+        float angle = (float)PI * i / 30.0f; // 0 to PI (top half curve)
+        glVertex2f(cx + rx * cosf(angle), cy + ry * sinf(angle));
+    }
+    glEnd();
 }
 
-// ============================================================
 // C-130 CARGO PLANE
-// ============================================================
 void drawCargoPlane(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0);
-	glScalef(scale, scale, 1);
-	glColor3f(0.56f, 0.59f, 0.63f);
-	glBegin(GL_POLYGON);
-	glVertex2f(190, -10);
-	glVertex2f(170, 15);
-	glVertex2f(140, 25);
-	glVertex2f(-110, 25);
-	glVertex2f(-140, 15);
-	glVertex2f(-175, 15);
-	glVertex2f(-210, 0);
-	glVertex2f(-130, -15);
-	glVertex2f(140, -15);
-	glVertex2f(175, -25);
-	glEnd();
-	glColor3f(0.80f, 0.83f, 0.87f);
-	glBegin(GL_POLYGON);
-	glVertex2f(190, -10);
-	glVertex2f(175, -25);
-	glVertex2f(140, -32);
-	glVertex2f(-60, -32);
-	glVertex2f(-130, -15);
-	glVertex2f(140, -15);
-	glEnd();
-	glColor3f(0.48f, 0.52f, 0.57f);
-	glBegin(GL_POLYGON);
-	glVertex2f(-110, 25);
-	glVertex2f(-150, 130);
-	glVertex2f(-175, 130);
-	glVertex2f(-175, 15);
-	glVertex2f(-140, 15);
-	glEnd();
-	glColor3f(0.55f, 0.61f, 0.67f);
-	glBegin(GL_POLYGON);
-	glVertex2f(-150, 10);
-	glVertex2f(-205, -5);
-	glVertex2f(-190, -5);
-	glVertex2f(-140, 10);
-	glEnd();
-	glColor3f(0.45f, 0.50f, 0.56f);
-	glBegin(GL_POLYGON);
-	glVertex2f(45, 25);
-	glVertex2f(50, 5);
-	glVertex2f(-40, 5);
-	glVertex2f(-50, 25);
-	glEnd();
-	glColor3f(0.62f, 0.67f, 0.73f);
-	glBegin(GL_POLYGON);
-	glVertex2f(45, 25);
-	glVertex2f(35, 38);
-	glVertex2f(-35, 38);
-	glVertex2f(-50, 25);
-	glEnd();
-	glColor3f(0.56f, 0.61f, 0.67f);
-	glBegin(GL_POLYGON);
-	glVertex2f(55, 5);
-	glVertex2f(55, 22);
-	glVertex2f(10, 22);
-	glVertex2f(-5, 5);
-	glEnd();
-	glColor3f(0.15f, 0.15f, 0.18f);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(55, 22);
-	glVertex2f(68, 13.5f);
-	glVertex2f(55, 5);
-	glEnd();
-	glBegin(GL_TRIANGLES);
-	glVertex2f(58, 13.5f);
-	glVertex2f(55, 65);
-	glVertex2f(52, 13.5f);
-	glEnd();
-	glBegin(GL_TRIANGLES);
-	glVertex2f(58, 13.5f);
-	glVertex2f(55, -38);
-	glVertex2f(52, 13.5f);
-	glEnd();
-	glColor3f(0.10f, 0.12f, 0.14f);
-	drawCircle(118, -10, 4, 16);
-	drawCircle(95, -10, 4, 16);
-	drawCircle(40, -8, 3.5f, 16);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0);
+    glScalef(scale, scale, 1);
+    glColor3f(0.56f, 0.59f, 0.63f);
+    glBegin(GL_POLYGON);
+    glVertex2f(190, -10);
+    glVertex2f(170, 15);
+    glVertex2f(140, 25);
+    glVertex2f(-110, 25);
+    glVertex2f(-140, 15);
+    glVertex2f(-175, 15);
+    glVertex2f(-210, 0);
+    glVertex2f(-130, -15);
+    glVertex2f(140, -15);
+    glVertex2f(175, -25);
+    glEnd();
+    glColor3f(0.80f, 0.83f, 0.87f);
+    glBegin(GL_POLYGON);
+    glVertex2f(190, -10);
+    glVertex2f(175, -25);
+    glVertex2f(140, -32);
+    glVertex2f(-60, -32);
+    glVertex2f(-130, -15);
+    glVertex2f(140, -15);
+    glEnd();
+    glColor3f(0.48f, 0.52f, 0.57f);
+    glBegin(GL_POLYGON);
+    glVertex2f(-110, 25);
+    glVertex2f(-150, 130);
+    glVertex2f(-175, 130);
+    glVertex2f(-175, 15);
+    glVertex2f(-140, 15);
+    glEnd();
+    glColor3f(0.55f, 0.61f, 0.67f);
+    glBegin(GL_POLYGON);
+    glVertex2f(-150, 10);
+    glVertex2f(-205, -5);
+    glVertex2f(-190, -5);
+    glVertex2f(-140, 10);
+    glEnd();
+    glColor3f(0.45f, 0.50f, 0.56f);
+    glBegin(GL_POLYGON);
+    glVertex2f(45, 25);
+    glVertex2f(50, 5);
+    glVertex2f(-40, 5);
+    glVertex2f(-50, 25);
+    glEnd();
+    glColor3f(0.62f, 0.67f, 0.73f);
+    glBegin(GL_POLYGON);
+    glVertex2f(45, 25);
+    glVertex2f(35, 38);
+    glVertex2f(-35, 38);
+    glVertex2f(-50, 25);
+    glEnd();
+    glColor3f(0.56f, 0.61f, 0.67f);
+    glBegin(GL_POLYGON);
+    glVertex2f(55, 5);
+    glVertex2f(55, 22);
+    glVertex2f(10, 22);
+    glVertex2f(-5, 5);
+    glEnd();
+    glColor3f(0.15f, 0.15f, 0.18f);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(55, 22);
+    glVertex2f(68, 13.5f);
+    glVertex2f(55, 5);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(58, 13.5f);
+    glVertex2f(55, 65);
+    glVertex2f(52, 13.5f);
+    glEnd();
+    glBegin(GL_TRIANGLES);
+    glVertex2f(58, 13.5f);
+    glVertex2f(55, -38);
+    glVertex2f(52, 13.5f);
+    glEnd();
+    glColor3f(0.10f, 0.12f, 0.14f);
+    drawCircle(118, -10, 4, 16);
+    drawCircle(95, -10, 4, 16);
+    drawCircle(40, -8, 3.5f, 16);
+    glPopMatrix();
 }
 
 void drawBomb(float x, float y) {
-	glPushMatrix();
-	glTranslatef(x, y, 0);
-	glColor3f(0.12f, 0.12f, 0.14f);
-	drawCircle(0, 0, 13, 20);
-	glColor3f(0.08f, 0.08f, 0.09f);
-	drawTriangle(-9, -7, 9, -7, 0, -28);
-	glColor3f(0.28f, 0.28f, 0.30f);
-	drawTriangle(-10, 7, -30, 20, -5, 17);
-	drawTriangle(10, 7, 30, 20, 5, 17);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0);
+    glColor3f(0.12f, 0.12f, 0.14f);
+    drawCircle(0, 0, 13, 20);
+    glColor3f(0.08f, 0.08f, 0.09f);
+    drawTriangle(-9, -7, 9, -7, 0, -28);
+    glColor3f(0.28f, 0.28f, 0.30f);
+    drawTriangle(-10, 7, -30, 20, -5, 17);
+    drawTriangle(10, 7, 30, 20, 5, 17);
+    glPopMatrix();
 }
 
 void drawExplosionFlash() {
-	if (flashTimer > 0.45f)
-		glColor3f(1.0f, 0.90f, 0.10f);
-	else if (flashTimer > 0.0f)
-		glColor3f(1.0f, 0.20f, 0.02f);
-	else
-		glColor3f(0.15f, 0.02f, 0.01f);
-	drawRect(0, 0, WIN_W, WIN_H);
+    if (flashTimer > 0.45f)
+        glColor3f(1.0f, 0.90f, 0.10f);
+    else if (flashTimer > 0.0f)
+        glColor3f(1.0f, 0.20f, 0.02f);
+    else
+        glColor3f(0.15f, 0.02f, 0.01f);
+    drawRect(0, 0, WIN_W, WIN_H);
 }
 
 void resetBombingAnimation() {
-	bombingStarted = false;
-	planePassOnly = false;
-	flashActive = false;
-	planeX = -350.0f;
-	planeY = 780.0f;
-	flashTimer = 0;
-	transitionTimer = 0;
-	bombX = 0.0f;
-	bombY = 0.0f;
-	bombDropped = false;
-	bombHit = false;
+    bombingStarted = false;
+    planePassOnly = false;
+    flashActive = false;
+    planeX = -350.0f;
+    planeY = 780.0f;
+    flashTimer = 0;
+    transitionTimer = 0;
+    bombX = 0.0f;
+    bombY = 0.0f;
+    bombDropped = false;
+    bombHit = false;
 }
 
 //------------------------- Structs & Colors -------------------------
 struct Color3 {
-	float r, g, b;
+    float r, g, b;
 };
 
 struct HutColors {
-	Color3 wall;
-	Color3 roof;
-	Color3 door;
-	Color3 knob;
-	Color3 window;
-	Color3 windowFrame;
-	Color3 chimney;
-	Color3 smoke;
+    Color3 wall;
+    Color3 roof;
+    Color3 door;
+    Color3 knob;
+    Color3 window;
+    Color3 windowFrame;
+    Color3 chimney;
+    Color3 smoke;
 };
-//-------------------------End(Structs)---------------------------------------
 
 //-------------------------HutColors---------------------------------------
-const HutColors HutColor1 = {{0.85f, 0.65f, 0.45f}, {0.65f, 0.16f, 0.16f},
-							 {0.40f, 0.22f, 0.10f}, {1.0f, 0.85f, 0.2f},
-							 {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f},
-							 {0.55f, 0.35f, 0.30f}, {0.85f, 0.85f, 0.85f}};
-const HutColors HutColor2 = {{0.93f, 0.87f, 0.70f}, {0.80f, 0.63f, 0.22f},
-							 {0.35f, 0.20f, 0.08f}, {1.0f, 0.85f, 0.2f},
-							 {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f},
-							 {0.50f, 0.50f, 0.50f}, {0.85f, 0.85f, 0.85f}};
-const HutColors HutColor3 = {{0.96f, 0.96f, 0.94f}, {0.16f, 0.24f, 0.55f},
-							 {0.70f, 0.15f, 0.15f}, {0.85f, 0.70f, 0.25f},
-							 {0.90f, 0.92f, 0.60f}, {0.20f, 0.20f, 0.25f},
-							 {0.45f, 0.45f, 0.48f}, {0.85f, 0.85f, 0.85f}};
-const HutColors HutColor4 = {{0.95f, 0.75f, 0.80f}, {0.20f, 0.55f, 0.50f},
-							 {0.35f, 0.15f, 0.35f}, {0.90f, 0.85f, 0.30f},
-							 {0.95f, 0.95f, 0.90f}, {0.30f, 0.15f, 0.20f},
-							 {0.55f, 0.55f, 0.55f}, {0.90f, 0.90f, 0.90f}};
-const HutColors HutColor5 = {{0.55f, 0.75f, 0.55f}, {0.35f, 0.45f, 0.25f},
-							 {0.30f, 0.18f, 0.10f}, {0.85f, 0.75f, 0.30f},
-							 {0.75f, 0.90f, 0.95f}, {0.20f, 0.25f, 0.15f},
-							 {0.40f, 0.40f, 0.35f}, {0.90f, 0.90f, 0.90f}};
-const HutColors HutColor6 = {{0.80f, 0.30f, 0.25f}, {0.30f, 0.30f, 0.32f},
-							 {0.20f, 0.15f, 0.15f}, {0.90f, 0.80f, 0.25f},
-							 {0.85f, 0.90f, 0.92f}, {0.15f, 0.15f, 0.18f},
-							 {0.40f, 0.42f, 0.44f}, {0.88f, 0.88f, 0.88f}};
-const HutColors HutColor7 = {{0.60f, 0.80f, 0.85f}, {0.90f, 0.90f, 0.90f},
-							 {0.25f, 0.35f, 0.45f}, {0.75f, 0.75f, 0.80f},
-							 {0.55f, 0.70f, 0.80f}, {0.15f, 0.20f, 0.25f},
-							 {0.65f, 0.65f, 0.65f}, {0.95f, 0.95f, 0.95f}};
-const HutColors HutColor8 = {{0.90f, 0.55f, 0.20f}, {0.55f, 0.20f, 0.15f},
-							 {0.30f, 0.12f, 0.08f}, {0.95f, 0.90f, 0.40f},
-							 {0.98f, 0.85f, 0.55f}, {0.25f, 0.10f, 0.05f},
-							 {0.45f, 0.30f, 0.28f}, {0.90f, 0.85f, 0.80f}};
-const HutColors HutColor9 = {{0.75f, 0.90f, 0.75f}, {0.85f, 0.40f, 0.55f},
-							 {0.40f, 0.25f, 0.35f}, {0.95f, 0.85f, 0.50f},
-							 {0.90f, 0.95f, 0.85f}, {0.30f, 0.20f, 0.25f},
-							 {0.60f, 0.55f, 0.60f}, {0.92f, 0.92f, 0.92f}};
-const HutColors HutColor10 = {{0.20f, 0.20f, 0.25f}, {0.10f, 0.10f, 0.15f},
-							  {0.05f, 0.05f, 0.08f}, {0.70f, 0.70f, 0.75f},
-							  {0.40f, 0.55f, 0.70f}, {0.08f, 0.08f, 0.10f},
-							  {0.25f, 0.25f, 0.28f}, {0.75f, 0.75f, 0.78f}};
-const HutColors HutColor11 = {{0.88f, 0.78f, 0.60f}, {0.45f, 0.25f, 0.20f},
-							  {0.28f, 0.16f, 0.10f}, {0.80f, 0.65f, 0.20f},
-							  {0.72f, 0.80f, 0.85f}, {0.25f, 0.18f, 0.12f},
-							  {0.50f, 0.48f, 0.45f}, {0.88f, 0.88f, 0.88f}};
-const HutColors HutColor12 = {{0.65f, 0.85f, 0.90f}, {0.95f, 0.60f, 0.30f},
-							  {0.30f, 0.30f, 0.35f}, {0.85f, 0.80f, 0.35f},
-							  {0.85f, 0.95f, 0.98f}, {0.20f, 0.22f, 0.28f},
-							  {0.60f, 0.60f, 0.62f}, {0.92f, 0.92f, 0.94f}};
-const HutColors HutColor13 = {{0.40f, 0.60f, 0.35f}, {0.55f, 0.25f, 0.20f},
-							  {0.25f, 0.15f, 0.08f}, {0.90f, 0.75f, 0.25f},
-							  {0.80f, 0.88f, 0.70f}, {0.15f, 0.18f, 0.10f},
-							  {0.45f, 0.40f, 0.35f}, {0.85f, 0.85f, 0.85f}};
-const HutColors HutColor14 = {{0.98f, 0.88f, 0.75f}, {0.70f, 0.40f, 0.60f},
-							  {0.35f, 0.20f, 0.30f}, {0.95f, 0.90f, 0.45f},
-							  {0.90f, 0.85f, 0.95f}, {0.28f, 0.20f, 0.25f},
-							  {0.55f, 0.50f, 0.55f}, {0.90f, 0.90f, 0.92f}};
-const HutColors HutColor15 = {{0.30f, 0.35f, 0.45f}, {0.85f, 0.85f, 0.90f},
-							  {0.15f, 0.15f, 0.20f}, {0.80f, 0.70f, 0.30f},
-							  {0.60f, 0.75f, 0.90f}, {0.10f, 0.10f, 0.15f},
-							  {0.55f, 0.58f, 0.60f}, {0.93f, 0.93f, 0.95f}};
-const HutColors HutColor16 = {{0.85f, 0.45f, 0.35f}, {0.40f, 0.55f, 0.30f},
-							  {0.30f, 0.20f, 0.15f}, {0.90f, 0.85f, 0.30f},
-							  {0.95f, 0.90f, 0.75f}, {0.22f, 0.18f, 0.12f},
-							  {0.48f, 0.45f, 0.40f}, {0.88f, 0.86f, 0.82f}};
-const HutColors HutColor17 = {{0.55f, 0.65f, 0.80f}, {0.25f, 0.25f, 0.30f},
-							  {0.35f, 0.25f, 0.40f}, {0.85f, 0.80f, 0.35f},
-							  {0.70f, 0.85f, 0.95f}, {0.18f, 0.15f, 0.22f},
-							  {0.42f, 0.40f, 0.48f}, {0.90f, 0.90f, 0.92f}};
-const HutColors HutColor18 = {{0.92f, 0.70f, 0.55f}, {0.60f, 0.35f, 0.25f},
-							  {0.32f, 0.18f, 0.12f}, {0.95f, 0.88f, 0.35f},
-							  {0.85f, 0.75f, 0.60f}, {0.28f, 0.16f, 0.10f},
-							  {0.50f, 0.42f, 0.35f}, {0.88f, 0.84f, 0.80f}};
-const HutColors HutColor19 = {{0.45f, 0.75f, 0.65f}, {0.65f, 0.30f, 0.40f},
-							  {0.25f, 0.28f, 0.22f}, {0.88f, 0.82f, 0.30f},
-							  {0.80f, 0.92f, 0.88f}, {0.18f, 0.22f, 0.18f},
-							  {0.42f, 0.48f, 0.44f}, {0.90f, 0.92f, 0.90f}};
-const HutColors HutColor20 = {{0.15f, 0.18f, 0.22f}, {0.55f, 0.15f, 0.15f},
-							  {0.08f, 0.08f, 0.10f}, {0.75f, 0.72f, 0.68f},
-							  {0.35f, 0.42f, 0.55f}, {0.05f, 0.05f, 0.08f},
-							  {0.30f, 0.30f, 0.32f}, {0.70f, 0.70f, 0.72f}};
+const HutColors HutColor1 = { {0.85f, 0.65f, 0.45f}, {0.65f, 0.16f, 0.16f},
+                             {0.40f, 0.22f, 0.10f}, {1.0f, 0.85f, 0.2f},
+                             {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f},
+                             {0.55f, 0.35f, 0.30f}, {0.85f, 0.85f, 0.85f} };
+const HutColors HutColor2 = { {0.93f, 0.87f, 0.70f}, {0.80f, 0.63f, 0.22f},
+                             {0.35f, 0.20f, 0.08f}, {1.0f, 0.85f, 0.2f},
+                             {0.68f, 0.85f, 0.90f}, {0.30f, 0.20f, 0.10f},
+                             {0.50f, 0.50f, 0.50f}, {0.85f, 0.85f, 0.85f} };
+const HutColors HutColor3 = { {0.96f, 0.96f, 0.94f}, {0.16f, 0.24f, 0.55f},
+                             {0.70f, 0.15f, 0.15f}, {0.85f, 0.70f, 0.25f},
+                             {0.90f, 0.92f, 0.60f}, {0.20f, 0.20f, 0.25f},
+                             {0.45f, 0.45f, 0.48f}, {0.85f, 0.85f, 0.85f} };
+const HutColors HutColor4 = { {0.95f, 0.75f, 0.80f}, {0.20f, 0.55f, 0.50f},
+                             {0.35f, 0.15f, 0.35f}, {0.90f, 0.85f, 0.30f},
+                             {0.95f, 0.95f, 0.90f}, {0.30f, 0.15f, 0.20f},
+                             {0.55f, 0.55f, 0.55f}, {0.90f, 0.90f, 0.90f} };
+const HutColors HutColor5 = { {0.55f, 0.75f, 0.55f}, {0.35f, 0.45f, 0.25f},
+                             {0.30f, 0.18f, 0.10f}, {0.85f, 0.75f, 0.30f},
+                             {0.75f, 0.90f, 0.95f}, {0.20f, 0.25f, 0.15f},
+                             {0.40f, 0.40f, 0.35f}, {0.90f, 0.90f, 0.90f} };
+const HutColors HutColor6 = { {0.80f, 0.30f, 0.25f}, {0.30f, 0.30f, 0.32f},
+                             {0.20f, 0.15f, 0.15f}, {0.90f, 0.80f, 0.25f},
+                             {0.85f, 0.90f, 0.92f}, {0.15f, 0.15f, 0.18f},
+                             {0.40f, 0.42f, 0.44f}, {0.88f, 0.88f, 0.88f} };
+const HutColors HutColor7 = { {0.60f, 0.80f, 0.85f}, {0.90f, 0.90f, 0.90f},
+                             {0.25f, 0.35f, 0.45f}, {0.75f, 0.75f, 0.80f},
+                             {0.55f, 0.70f, 0.80f}, {0.15f, 0.20f, 0.25f},
+                             {0.65f, 0.65f, 0.65f}, {0.95f, 0.95f, 0.95f} };
+const HutColors HutColor8 = { {0.90f, 0.55f, 0.20f}, {0.55f, 0.20f, 0.15f},
+                             {0.30f, 0.12f, 0.08f}, {0.95f, 0.90f, 0.40f},
+                             {0.98f, 0.85f, 0.55f}, {0.25f, 0.10f, 0.05f},
+                             {0.45f, 0.30f, 0.28f}, {0.90f, 0.85f, 0.80f} };
+const HutColors HutColor9 = { {0.75f, 0.90f, 0.75f}, {0.85f, 0.40f, 0.55f},
+                             {0.40f, 0.25f, 0.35f}, {0.95f, 0.85f, 0.50f},
+                             {0.90f, 0.95f, 0.85f}, {0.30f, 0.20f, 0.25f},
+                             {0.60f, 0.55f, 0.60f}, {0.92f, 0.92f, 0.92f} };
+const HutColors HutColor10 = { {0.20f, 0.20f, 0.25f}, {0.10f, 0.10f, 0.15f},
+                              {0.05f, 0.05f, 0.08f}, {0.70f, 0.70f, 0.75f},
+                              {0.40f, 0.55f, 0.70f}, {0.08f, 0.08f, 0.10f},
+                              {0.25f, 0.25f, 0.28f}, {0.75f, 0.75f, 0.78f} };
+const HutColors HutColor11 = { {0.88f, 0.78f, 0.60f}, {0.45f, 0.25f, 0.20f},
+                              {0.28f, 0.16f, 0.10f}, {0.80f, 0.65f, 0.20f},
+                              {0.72f, 0.80f, 0.85f}, {0.25f, 0.18f, 0.12f},
+                              {0.50f, 0.48f, 0.45f}, {0.88f, 0.88f, 0.88f} };
+const HutColors HutColor12 = { {0.65f, 0.85f, 0.90f}, {0.95f, 0.60f, 0.30f},
+                              {0.30f, 0.30f, 0.35f}, {0.85f, 0.80f, 0.35f},
+                              {0.85f, 0.95f, 0.98f}, {0.20f, 0.22f, 0.28f},
+                              {0.60f, 0.60f, 0.62f}, {0.92f, 0.92f, 0.94f} };
+const HutColors HutColor13 = { {0.40f, 0.60f, 0.35f}, {0.55f, 0.25f, 0.20f},
+                              {0.25f, 0.15f, 0.08f}, {0.90f, 0.75f, 0.25f},
+                              {0.80f, 0.88f, 0.70f}, {0.15f, 0.18f, 0.10f},
+                              {0.45f, 0.40f, 0.35f}, {0.85f, 0.85f, 0.85f} };
+const HutColors HutColor14 = { {0.98f, 0.88f, 0.75f}, {0.70f, 0.40f, 0.60f},
+                              {0.35f, 0.20f, 0.30f}, {0.95f, 0.90f, 0.45f},
+                              {0.90f, 0.85f, 0.95f}, {0.28f, 0.20f, 0.25f},
+                              {0.55f, 0.50f, 0.55f}, {0.90f, 0.90f, 0.92f} };
+const HutColors HutColor15 = { {0.30f, 0.35f, 0.45f}, {0.85f, 0.85f, 0.90f},
+                              {0.15f, 0.15f, 0.20f}, {0.80f, 0.70f, 0.30f},
+                              {0.60f, 0.75f, 0.90f}, {0.10f, 0.10f, 0.15f},
+                              {0.55f, 0.58f, 0.60f}, {0.93f, 0.93f, 0.95f} };
+const HutColors HutColor16 = { {0.85f, 0.45f, 0.35f}, {0.40f, 0.55f, 0.30f},
+                              {0.30f, 0.20f, 0.15f}, {0.90f, 0.85f, 0.30f},
+                              {0.95f, 0.90f, 0.75f}, {0.22f, 0.18f, 0.12f},
+                              {0.48f, 0.45f, 0.40f}, {0.88f, 0.86f, 0.82f} };
+const HutColors HutColor17 = { {0.55f, 0.65f, 0.80f}, {0.25f, 0.25f, 0.30f},
+                              {0.35f, 0.25f, 0.40f}, {0.85f, 0.80f, 0.35f},
+                              {0.70f, 0.85f, 0.95f}, {0.18f, 0.15f, 0.22f},
+                              {0.42f, 0.40f, 0.48f}, {0.90f, 0.90f, 0.92f} };
+const HutColors HutColor18 = { {0.92f, 0.70f, 0.55f}, {0.60f, 0.35f, 0.25f},
+                              {0.32f, 0.18f, 0.12f}, {0.95f, 0.88f, 0.35f},
+                              {0.85f, 0.75f, 0.60f}, {0.28f, 0.16f, 0.10f},
+                              {0.50f, 0.42f, 0.35f}, {0.88f, 0.84f, 0.80f} };
+const HutColors HutColor19 = { {0.45f, 0.75f, 0.65f}, {0.65f, 0.30f, 0.40f},
+                              {0.25f, 0.28f, 0.22f}, {0.88f, 0.82f, 0.30f},
+                              {0.80f, 0.92f, 0.88f}, {0.18f, 0.22f, 0.18f},
+                              {0.42f, 0.48f, 0.44f}, {0.90f, 0.92f, 0.90f} };
+const HutColors HutColor20 = { {0.15f, 0.18f, 0.22f}, {0.55f, 0.15f, 0.15f},
+                              {0.08f, 0.08f, 0.10f}, {0.75f, 0.72f, 0.68f},
+                              {0.35f, 0.42f, 0.55f}, {0.05f, 0.05f, 0.08f},
+                              {0.30f, 0.30f, 0.32f}, {0.70f, 0.70f, 0.72f} };
 
-//---------------------------- end(hutcolors)----------------------------
 
 //-----------------------------HutDesigns-----------------------------
 // [S1-OBJ-01] Hut Type 1
+
 void hut1(HutColors colors) {
-	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
-	drawRect(350.0f, 400.0f, 390.0f, 490.0f);
+    glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+    drawRect(350.0f, 400.0f, 390.0f, 490.0f);
 
-	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
-	drawTriangle(140.0f, 350.0f, 460.0f, 350.0f, 300.0f, 480.0f);
+    glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+    drawTriangle(140.0f, 350.0f, 460.0f, 350.0f, 300.0f, 480.0f);
 
-	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
-	drawRect(180.0f, 150.0f, 420.0f, 350.0f);
+    glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+    drawRect(180.0f, 150.0f, 420.0f, 350.0f);
 
-	glColor3f(colors.door.r, colors.door.g, colors.door.b);
-	drawRect(270.0f, 150.0f, 330.0f, 260.0f);
+    glColor3f(colors.door.r, colors.door.g, colors.door.b);
+    drawRect(270.0f, 150.0f, 330.0f, 260.0f);
 
-	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
-	drawCircle(320.0f, 205.0f, 4.0f, 12);
+    glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
+    drawCircle(320.0f, 205.0f, 4.0f, 12);
 
-	glColor3f(colors.window.r, colors.window.g, colors.window.b);
-	drawRect(210.0f, 270.0f, 260.0f, 320.0f);
-	drawRect(340.0f, 270.0f, 390.0f, 320.0f);
+    glColor3f(colors.window.r, colors.window.g, colors.window.b);
+    drawRect(210.0f, 270.0f, 260.0f, 320.0f);
+    drawRect(340.0f, 270.0f, 390.0f, 320.0f);
 
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glLineWidth(2.0f);
+    glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+    glLineWidth(2.0f);
 
-	glBegin(GL_LINES);
-	glVertex2f(235.0f, 270.0f);
-	glVertex2f(235.0f, 320.0f);
-	glVertex2f(210.0f, 295.0f);
-	glVertex2f(260.0f, 295.0f);
-	glVertex2f(365.0f, 270.0f);
-	glVertex2f(365.0f, 320.0f);
-	glVertex2f(340.0f, 295.0f);
-	glVertex2f(390.0f, 295.0f);
-	glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(235.0f, 270.0f);
+    glVertex2f(235.0f, 320.0f);
+    glVertex2f(210.0f, 295.0f);
+    glVertex2f(260.0f, 295.0f);
+    glVertex2f(365.0f, 270.0f);
+    glVertex2f(365.0f, 320.0f);
+    glVertex2f(340.0f, 295.0f);
+    glVertex2f(390.0f, 295.0f);
+    glEnd();
 }
 
 // [S1-OBJ-02] Hut Type 2
+
 void hut2(HutColors colors) {
-	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
-	drawRect(190.0f, 150.0f, 410.0f, 340.0f);
+    glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+    drawRect(190.0f, 150.0f, 410.0f, 340.0f);
 
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(300.0f, 340.0f);
-	for (int i = 0; i <= 20; i++) {
-		float angle = (float)PI * i / 20.0f;
-		glVertex2f(300.0f + 110.0f * cosf(angle), 340.0f + 40.0f * sinf(angle));
-	}
-	glEnd();
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(300.0f, 340.0f);
+    for (int i = 0; i <= 20; i++) {
+        float angle = (float)PI * i / 20.0f;
+        glVertex2f(300.0f + 110.0f * cosf(angle), 340.0f + 40.0f * sinf(angle));
+    }
+    glEnd();
 
-	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
-	drawTriangle(160.0f, 370.0f, 440.0f, 370.0f, 300.0f, 500.0f);
+    glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+    drawTriangle(160.0f, 370.0f, 440.0f, 370.0f, 300.0f, 500.0f);
 
-	glColor3f(colors.roof.r * 0.75f, colors.roof.g * 0.75f,
-			  colors.roof.b * 0.75f);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	for (int i = 1; i <= 4; i++) {
-		float t = i / 5.0f;
-		float y = 370.0f + t * (500.0f - 370.0f);
-		float halfWidth = (1.0f - t) * 140.0f;
-		glVertex2f(300.0f - halfWidth, y);
-		glVertex2f(300.0f + halfWidth, y);
-	}
-	glEnd();
+    glColor3f(colors.roof.r * 0.75f, colors.roof.g * 0.75f,
+        colors.roof.b * 0.75f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    for (int i = 1; i <= 4; i++) {
+        float t = i / 5.0f;
+        float y = 370.0f + t * (500.0f - 370.0f);
+        float halfWidth = (1.0f - t) * 140.0f;
+        glVertex2f(300.0f - halfWidth, y);
+        glVertex2f(300.0f + halfWidth, y);
+    }
+    glEnd();
 
-	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
-	drawRect(355.0f, 420.0f, 385.0f, 470.0f);
+    glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+    drawRect(355.0f, 420.0f, 385.0f, 470.0f);
 
-	glColor3f(colors.door.r, colors.door.g, colors.door.b);
-	drawRect(265.0f, 150.0f, 335.0f, 230.0f);
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(300.0f, 230.0f);
-	for (int i = 0; i <= 16; i++) {
-		float angle = (float)PI * i / 16.0f;
-		glVertex2f(300.0f + 35.0f * cosf(angle), 230.0f + 35.0f * sinf(angle));
-	}
-	glEnd();
+    glColor3f(colors.door.r, colors.door.g, colors.door.b);
+    drawRect(265.0f, 150.0f, 335.0f, 230.0f);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(300.0f, 230.0f);
+    for (int i = 0; i <= 16; i++) {
+        float angle = (float)PI * i / 16.0f;
+        glVertex2f(300.0f + 35.0f * cosf(angle), 230.0f + 35.0f * sinf(angle));
+    }
+    glEnd();
 
-	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
-	drawCircle(320.0f, 195.0f, 4.0f, 12);
+    glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
+    drawCircle(320.0f, 195.0f, 4.0f, 12);
 
-	glColor3f(colors.window.r, colors.window.g, colors.window.b);
-	drawCircle(235.0f, 280.0f, 28.0f, 24);
-	drawCircle(365.0f, 280.0f, 28.0f, 24);
+    glColor3f(colors.window.r, colors.window.g, colors.window.b);
+    drawCircle(235.0f, 280.0f, 28.0f, 24);
+    drawCircle(365.0f, 280.0f, 28.0f, 24);
 
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	glVertex2f(235.0f, 252.0f);
-	glVertex2f(235.0f, 308.0f);
-	glVertex2f(207.0f, 280.0f);
-	glVertex2f(263.0f, 280.0f);
-	glVertex2f(365.0f, 252.0f);
-	glVertex2f(365.0f, 308.0f);
-	glVertex2f(337.0f, 280.0f);
-	glVertex2f(393.0f, 280.0f);
-	glEnd();
+    glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex2f(235.0f, 252.0f);
+    glVertex2f(235.0f, 308.0f);
+    glVertex2f(207.0f, 280.0f);
+    glVertex2f(263.0f, 280.0f);
+    glVertex2f(365.0f, 252.0f);
+    glVertex2f(365.0f, 308.0f);
+    glVertex2f(337.0f, 280.0f);
+    glVertex2f(393.0f, 280.0f);
+    glEnd();
 }
 
 // [S1-OBJ-03] Hut Type 3
+
 void hut3(HutColors colors) {
-	// A square, flat-roofed adobe-style hut with a stepped roofline
-	// and a small awning over the door.
 
-	// Base walls (wide, squat rectangle)
-	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
-	drawRect(170.0f, 150.0f, 430.0f, 340.0f);
+    glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+    drawRect(170.0f, 150.0f, 430.0f, 340.0f);
 
-	// Stepped parapet roofline (flat roof look) drawn as a few offset
-	// rectangles
-	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
-	drawRect(150.0f, 340.0f, 450.0f, 365.0f);
-	drawRect(190.0f, 365.0f, 410.0f, 385.0f);
-	drawRect(230.0f, 385.0f, 370.0f, 400.0f);
 
-	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
-	drawRect(320.0f, 400.0f, 350.0f, 460.0f);
+    glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+    drawRect(150.0f, 340.0f, 450.0f, 365.0f);
+    drawRect(190.0f, 365.0f, 410.0f, 385.0f);
+    drawRect(230.0f, 385.0f, 370.0f, 400.0f);
 
-	glColor3f(colors.roof.r * 0.85f, colors.roof.g * 0.85f,
-			  colors.roof.b * 0.85f);
-	drawTriangle(255.0f, 250.0f, 345.0f, 250.0f, 300.0f, 290.0f);
+    glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+    drawRect(320.0f, 400.0f, 350.0f, 460.0f);
 
-	glColor3f(colors.door.r, colors.door.g, colors.door.b);
-	drawRect(270.0f, 150.0f, 330.0f, 250.0f);
+    glColor3f(colors.roof.r * 0.85f, colors.roof.g * 0.85f,
+        colors.roof.b * 0.85f);
+    drawTriangle(255.0f, 250.0f, 345.0f, 250.0f, 300.0f, 290.0f);
 
-	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
-	drawCircle(320.0f, 200.0f, 4.0f, 12);
+    glColor3f(colors.door.r, colors.door.g, colors.door.b);
+    drawRect(270.0f, 150.0f, 330.0f, 250.0f);
 
-	glColor3f(colors.window.r, colors.window.g, colors.window.b);
-	drawRect(200.0f, 260.0f, 400.0f, 310.0f);
+    glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
+    drawCircle(320.0f, 200.0f, 4.0f, 12);
 
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	glVertex2f(266.0f, 260.0f);
-	glVertex2f(266.0f, 310.0f);
-	glVertex2f(333.0f, 260.0f);
-	glVertex2f(333.0f, 310.0f);
-	glVertex2f(200.0f, 285.0f);
-	glVertex2f(400.0f, 285.0f);
-	glEnd();
+    glColor3f(colors.window.r, colors.window.g, colors.window.b);
+    drawRect(200.0f, 260.0f, 400.0f, 310.0f);
+
+    glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex2f(266.0f, 260.0f);
+    glVertex2f(266.0f, 310.0f);
+    glVertex2f(333.0f, 260.0f);
+    glVertex2f(333.0f, 310.0f);
+    glVertex2f(200.0f, 285.0f);
+    glVertex2f(400.0f, 285.0f);
+    glEnd();
 }
 
 // [S1-OBJ-04] Hut Type 4
+
 void hut4(HutColors colors) {
-	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
-	drawRect(370.0f, 250.0f, 410.0f, 440.0f);
+    glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+    drawRect(370.0f, 250.0f, 410.0f, 440.0f);
 
-	// Chimney (drawn first so the roof overlaps it)
-	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
-	drawRect(370.0f, 250.0f, 410.0f, 440.0f);
+    // Chimney (drawn first so the roof overlaps it)
+    glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+    drawRect(370.0f, 250.0f, 410.0f, 440.0f);
 
-	// Short base walls
-	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
-	drawRect(200.0f, 150.0f, 400.0f, 200.0f);
+    // Short base walls
+    glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+    drawRect(200.0f, 150.0f, 400.0f, 200.0f);
 
-	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
-	drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
+    glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+    drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
 
-	// Massive A-frame roof
-	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
-	drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
+    // Massive A-frame roof
+    glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+    drawTriangle(120.0f, 200.0f, 480.0f, 200.0f, 300.0f, 480.0f);
 
-	// Central door
-	glColor3f(colors.door.r, colors.door.g, colors.door.b);
-	drawRect(260.0f, 150.0f, 340.0f, 250.0f);
+    // Central door
+    glColor3f(colors.door.r, colors.door.g, colors.door.b);
+    drawRect(260.0f, 150.0f, 340.0f, 250.0f);
 
-	// Door knob
-	glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
-	drawCircle(325.0f, 200.0f, 4.0f, 12);
+    // Door knob
+    glColor3f(colors.knob.r, colors.knob.g, colors.knob.b);
+    drawCircle(325.0f, 200.0f, 4.0f, 12);
 
-	// Large triangular window
-	glColor3f(colors.window.r, colors.window.g, colors.window.b);
-	drawTriangle(240.0f, 280.0f, 360.0f, 280.0f, 300.0f, 400.0f);
+    // Large triangular window
+    glColor3f(colors.window.r, colors.window.g, colors.window.b);
+    drawTriangle(240.0f, 280.0f, 360.0f, 280.0f, 300.0f, 400.0f);
 
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glLineWidth(3.0f);
-	glBegin(GL_LINES);
-	glVertex2f(300.0f, 280.0f);
-	glVertex2f(300.0f, 400.0f);
-	glVertex2f(240.0f, 280.0f);
-	glVertex2f(360.0f, 280.0f);
-	glEnd();
+    glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(300.0f, 280.0f);
+    glVertex2f(300.0f, 400.0f);
+    glVertex2f(240.0f, 280.0f);
+    glVertex2f(360.0f, 280.0f);
+    glEnd();
 }
 
 // [S1-OBJ-05] Hut Type 5
+
 void hut5(HutColors colors) {
-	glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
-	drawRect(155.0f, 250.0f, 185.0f, 410.0f);
+    glColor3f(colors.chimney.r, colors.chimney.g, colors.chimney.b);
+    drawRect(155.0f, 250.0f, 185.0f, 410.0f);
 
-	glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
-	drawRect(180.0f, 150.0f, 420.0f, 320.0f);
+    glColor3f(colors.wall.r, colors.wall.g, colors.wall.b);
+    drawRect(180.0f, 150.0f, 420.0f, 320.0f);
 
-	glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
-	glBegin(GL_POLYGON);
-	glVertex2f(160.0f, 320.0f);
-	glVertex2f(200.0f, 420.0f);
-	glVertex2f(300.0f, 470.0f);
-	glVertex2f(400.0f, 420.0f);
-	glVertex2f(440.0f, 320.0f);
-	glEnd();
+    glColor3f(colors.roof.r, colors.roof.g, colors.roof.b);
+    glBegin(GL_POLYGON);
+    glVertex2f(160.0f, 320.0f);
+    glVertex2f(200.0f, 420.0f);
+    glVertex2f(300.0f, 470.0f);
+    glVertex2f(400.0f, 420.0f);
+    glVertex2f(440.0f, 320.0f);
+    glEnd();
 
-	glColor3f(colors.door.r, colors.door.g, colors.door.b);
-	drawRect(240.0f, 150.0f, 360.0f, 270.0f);
+    glColor3f(colors.door.r, colors.door.g, colors.door.b);
+    drawRect(240.0f, 150.0f, 360.0f, 270.0f);
 
-	// Wide double barn doors
-	glColor3f(colors.door.r, colors.door.g, colors.door.b);
-	drawRect(240.0f, 150.0f, 360.0f, 270.0f);
+    // Wide double barn doors
+    glColor3f(colors.door.r, colors.door.g, colors.door.b);
+    drawRect(240.0f, 150.0f, 360.0f, 270.0f);
 
-	// Door frames and X patterns for the barn look
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	glVertex2f(300.0f, 150.0f);
-	glVertex2f(300.0f, 270.0f);
-	glVertex2f(240.0f, 150.0f);
-	glVertex2f(300.0f, 270.0f);
-	glVertex2f(240.0f, 270.0f);
-	glVertex2f(300.0f, 150.0f);
-	glVertex2f(300.0f, 150.0f);
-	glVertex2f(360.0f, 270.0f);
-	glVertex2f(300.0f, 270.0f);
-	glVertex2f(360.0f, 150.0f);
-	glEnd();
+    // Door frames and X patterns for the barn look
+    glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex2f(300.0f, 150.0f);
+    glVertex2f(300.0f, 270.0f);
+    glVertex2f(240.0f, 150.0f);
+    glVertex2f(300.0f, 270.0f);
+    glVertex2f(240.0f, 270.0f);
+    glVertex2f(300.0f, 150.0f);
+    glVertex2f(300.0f, 150.0f);
+    glVertex2f(360.0f, 270.0f);
+    glVertex2f(300.0f, 270.0f);
+    glVertex2f(360.0f, 150.0f);
+    glEnd();
 
-	glColor3f(colors.window.r, colors.window.g, colors.window.b);
-	drawCircle(300.0f, 370.0f, 28.0f, 20);
+    glColor3f(colors.window.r, colors.window.g, colors.window.b);
+    drawCircle(300.0f, 370.0f, 28.0f, 20);
 
-	glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
-	glBegin(GL_LINES);
-	glVertex2f(272.0f, 370.0f);
-	glVertex2f(328.0f, 370.0f);
-	glVertex2f(300.0f, 342.0f);
-	glVertex2f(300.0f, 398.0f);
-	glEnd();
+    glColor3f(colors.windowFrame.r, colors.windowFrame.g, colors.windowFrame.b);
+    glBegin(GL_LINES);
+    glVertex2f(272.0f, 370.0f);
+    glVertex2f(328.0f, 370.0f);
+    glVertex2f(300.0f, 342.0f);
+    glVertex2f(300.0f, 398.0f);
+    glEnd();
 }
 
 //-----------------------------End(HutDesigns)-----------------------------
@@ -610,529 +605,524 @@ void hut5(HutColors colors) {
 // Environment-------------------------
 
 // [S1-OBJ-06] Pine Tree
-// Helper to draw a customizable pine tree
+
 void drawTree(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
 
-	// Tree Trunk
-	glColor3f(0.35f, 0.20f, 0.10f);
-	drawRect(-10.0f, 0.0f, 10.0f, 40.0f);
+    // Tree Trunk
+    glColor3f(0.35f, 0.20f, 0.10f);
+    drawRect(-10.0f, 0.0f, 10.0f, 40.0f);
 
-	// Lower Foliage
-	glColor3f(0.12f, 0.38f, 0.15f); // Dark side
-	drawTriangle(-60.0f, 30.0f, 0.0f, 30.0f, 0.0f, 100.0f);
-	glColor3f(0.20f, 0.52f, 0.22f); // Light side
-	drawTriangle(0.0f, 30.0f, 60.0f, 30.0f, 0.0f, 100.0f);
+    // Lower Foliage
+    glColor3f(0.12f, 0.38f, 0.15f); // Dark side
+    drawTriangle(-60.0f, 30.0f, 0.0f, 30.0f, 0.0f, 100.0f);
+    glColor3f(0.20f, 0.52f, 0.22f); // Light side
+    drawTriangle(0.0f, 30.0f, 60.0f, 30.0f, 0.0f, 100.0f);
 
-	// Middle Foliage
-	glColor3f(0.12f, 0.38f, 0.15f);
-	drawTriangle(-50.0f, 70.0f, 0.0f, 70.0f, 0.0f, 140.0f);
-	glColor3f(0.20f, 0.52f, 0.22f);
-	drawTriangle(0.0f, 70.0f, 50.0f, 70.0f, 0.0f, 140.0f);
+    // Middle Foliage
+    glColor3f(0.12f, 0.38f, 0.15f);
+    drawTriangle(-50.0f, 70.0f, 0.0f, 70.0f, 0.0f, 140.0f);
+    glColor3f(0.20f, 0.52f, 0.22f);
+    drawTriangle(0.0f, 70.0f, 50.0f, 70.0f, 0.0f, 140.0f);
 
-	// Top Foliage
-	glColor3f(0.12f, 0.38f, 0.15f);
-	drawTriangle(-38.0f, 110.0f, 0.0f, 110.0f, 0.0f, 175.0f);
-	glColor3f(0.20f, 0.52f, 0.22f);
-	drawTriangle(0.0f, 110.0f, 38.0f, 110.0f, 0.0f, 175.0f);
+    // Top Foliage
+    glColor3f(0.12f, 0.38f, 0.15f);
+    drawTriangle(-38.0f, 110.0f, 0.0f, 110.0f, 0.0f, 175.0f);
+    glColor3f(0.20f, 0.52f, 0.22f);
+    drawTriangle(0.0f, 110.0f, 38.0f, 110.0f, 0.0f, 175.0f);
 
-	glPopMatrix();
+    glPopMatrix();
 }
 
 // [S1-OBJ-07] Tiny Tree
-// Tiny dark-green tree specifically for hill edge contours
+
 void drawTinyTree(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
 
-	// Dark Trunk
-	glColor3f(0.10f, 0.08f, 0.05f);
-	drawRect(-4.0f, 0.0f, 4.0f, 15.0f);
+    // Dark Trunk
+    glColor3f(0.10f, 0.08f, 0.05f);
+    drawRect(-4.0f, 0.0f, 4.0f, 15.0f);
 
-	// Dark forest green foliage
-	glColor3f(0.08f, 0.22f, 0.10f); // Shadow side
-	drawTriangle(-25.0f, 10.0f, 0.0f, 10.0f, 0.0f, 45.0f);
-	glColor3f(0.12f, 0.28f, 0.14f); // Lit side
-	drawTriangle(0.0f, 10.0f, 25.0f, 10.0f, 0.0f, 45.0f);
+    // Dark forest green foliage
+    glColor3f(0.08f, 0.22f, 0.10f); // Shadow side
+    drawTriangle(-25.0f, 10.0f, 0.0f, 10.0f, 0.0f, 45.0f);
+    glColor3f(0.12f, 0.28f, 0.14f); // Lit side
+    drawTriangle(0.0f, 10.0f, 25.0f, 10.0f, 0.0f, 45.0f);
 
-	glColor3f(0.08f, 0.22f, 0.10f);
-	drawTriangle(-20.0f, 30.0f, 0.0f, 30.0f, 0.0f, 65.0f);
-	glColor3f(0.12f, 0.28f, 0.14f);
-	drawTriangle(0.0f, 30.0f, 20.0f, 30.0f, 0.0f, 65.0f);
+    glColor3f(0.08f, 0.22f, 0.10f);
+    drawTriangle(-20.0f, 30.0f, 0.0f, 30.0f, 0.0f, 65.0f);
+    glColor3f(0.12f, 0.28f, 0.14f);
+    drawTriangle(0.0f, 30.0f, 20.0f, 30.0f, 0.0f, 65.0f);
 
-	glColor3f(0.08f, 0.22f, 0.10f);
-	drawTriangle(-15.0f, 50.0f, 0.0f, 50.0f, 0.0f, 80.0f);
-	glColor3f(0.12f, 0.28f, 0.14f);
-	drawTriangle(0.0f, 50.0f, 15.0f, 50.0f, 0.0f, 80.0f);
+    glColor3f(0.08f, 0.22f, 0.10f);
+    drawTriangle(-15.0f, 50.0f, 0.0f, 50.0f, 0.0f, 80.0f);
+    glColor3f(0.12f, 0.28f, 0.14f);
+    drawTriangle(0.0f, 50.0f, 15.0f, 50.0f, 0.0f, 80.0f);
 
-	glPopMatrix();
+    glPopMatrix();
 }
 
 // [S1-OBJ-08] Mountain Range
-// Green Mountain range
+
 void drawMountains() {
-	glPushMatrix();
-	glTranslatef(0.0f, -120.0f, 0.0f);
+    glPushMatrix();
+    glTranslatef(0.0f, -120.0f, 0.0f);
 
-	Color3 litGreen = {0.32f, 0.58f, 0.23f};
-	Color3 shadowGreen = {0.16f, 0.34f, 0.14f};
+    Color3 litGreen = { 0.32f, 0.58f, 0.23f };
+    Color3 shadowGreen = { 0.16f, 0.34f, 0.14f };
 
-	// --- 1. LEFT MOUNTAIN ---
-	glColor3f(litGreen.r, litGreen.g, litGreen.b);
-	drawTriangle(50.0f, 450.0f, 300.0f, 700.0f, 300.0f, 300.0f);
-	glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
-	drawTriangle(300.0f, 400.0f, 300.0f, 700.0f, 600.0f, 300.0f);
+    // --- 1. LEFT MOUNTAIN ---
+    glColor3f(litGreen.r, litGreen.g, litGreen.b);
+    drawTriangle(50.0f, 450.0f, 300.0f, 700.0f, 300.0f, 300.0f);
+    glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
+    drawTriangle(300.0f, 400.0f, 300.0f, 700.0f, 600.0f, 300.0f);
 
-	// --- 2. CENTER TALL MOUNTAIN ---
-	glColor3f(litGreen.r, litGreen.g, litGreen.b);
-	drawTriangle(200.0f, 300.0f, 570.0f, 800.0f, 570.0f, 300.0f);
-	glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
-	drawTriangle(570.0f, 300.0f, 570.0f, 800.0f, 1150.0f, 300.0f);
+    // --- 2. CENTER TALL MOUNTAIN ---
+    glColor3f(litGreen.r, litGreen.g, litGreen.b);
+    drawTriangle(200.0f, 300.0f, 570.0f, 800.0f, 570.0f, 300.0f);
+    glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
+    drawTriangle(570.0f, 300.0f, 570.0f, 800.0f, 1150.0f, 300.0f);
 
-	// --- 3. RIGHT MOUNTAIN ---
-	glColor3f(litGreen.r, litGreen.g, litGreen.b);
-	drawTriangle(800.0f, 300.0f, 1050.0f, 600.0f, 1050.0f, 300.0f);
-	glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
-	drawTriangle(1050.0f, 300.0f, 1050.0f, 600.0f, 1450.0f, 300.0f);
+    // --- 3. RIGHT MOUNTAIN ---
+    glColor3f(litGreen.r, litGreen.g, litGreen.b);
+    drawTriangle(800.0f, 300.0f, 1050.0f, 600.0f, 1050.0f, 300.0f);
+    glColor3f(shadowGreen.r, shadowGreen.g, shadowGreen.b);
+    drawTriangle(1050.0f, 300.0f, 1050.0f, 600.0f, 1450.0f, 300.0f);
 
-	glPopMatrix();
+    glPopMatrix();
 }
 
 // [S1-OBJ-09] Rolling Hills
-// Rolling Green Hills with small trees planted along the hill edges
+
 void drawHills() {
-	// 1. Back Left Hill
-	float h1_cx = 250.0f, h1_cy = 220.0f, h1_rx = 400.0f, h1_ry = 180.0f;
-	drawHill(h1_cx, h1_cy, h1_rx, h1_ry, 0.25f, 0.48f, 0.20f);
+    // 1. Back Left Hill
+    float h1_cx = 250.0f, h1_cy = 220.0f, h1_rx = 400.0f, h1_ry = 180.0f;
+    drawHill(h1_cx, h1_cy, h1_rx, h1_ry, 0.25f, 0.48f, 0.20f);
 
-	// Small trees on Back Left Hill edge
-	drawTinyTree(577.661f, 323.244f, 0.22f);
-	drawTinyTree(479.431f, 367.447f, 0.25f);
-	drawTinyTree(353.528f, 393.867f, 0.20f);
-	drawTinyTree(215.138f, 399.315f, 0.24f);
-	drawTinyTree(80.953f, 383.135f, 0.21f);
-	drawTinyTree(-32.843f, 347.279f, 0.23f);
-	drawTinyTree(20.569f, 367.447f, 0.23f);
-	drawTinyTree(50.000f, 375.885f, 0.23f);
-	drawTinyTree(62.211f, 378.931f, 0.23f);
-	drawTinyTree(100.157f, 386.893f, 0.23f);
-	drawTinyTree(3.735f, 361.842f, 0.23f);
-	drawTinyTree(-17.652f, 353.766f, 0.23f);
+    // Small trees on Back Left Hill edge
+    drawTinyTree(577.661f, 323.244f, 0.22f);
+    drawTinyTree(479.431f, 367.447f, 0.25f);
+    drawTinyTree(353.528f, 393.867f, 0.20f);
+    drawTinyTree(215.138f, 399.315f, 0.24f);
+    drawTinyTree(80.953f, 383.135f, 0.21f);
+    drawTinyTree(-32.843f, 347.279f, 0.23f);
+    drawTinyTree(20.569f, 367.447f, 0.23f);
+    drawTinyTree(50.000f, 375.885f, 0.23f);
+    drawTinyTree(62.211f, 378.931f, 0.23f);
+    drawTinyTree(100.157f, 386.893f, 0.23f);
+    drawTinyTree(3.735f, 361.842f, 0.23f);
+    drawTinyTree(-17.652f, 353.766f, 0.23f);
 
-	// 2. Back Right Hill
-	float h2_cx = 1350.0f, h2_cy = 220.0f, h2_rx = 450.0f, h2_ry = 190.0f;
-	drawHill(h2_cx, h2_cy, h2_rx, h2_ry, 0.22f, 0.44f, 0.18f);
+    // 2. Back Right Hill
+    float h2_cx = 1350.0f, h2_cy = 220.0f, h2_rx = 450.0f, h2_ry = 190.0f;
+    drawHill(h2_cx, h2_cy, h2_rx, h2_ry, 0.22f, 0.44f, 0.18f);
 
-	// Small trees on Back Right Hill edge
-	drawTinyTree(1575.000f, 384.545f, 0.25f);
-	drawTinyTree(1554.296f, 389.291f, 0.25f);
-	drawTinyTree(1533.031f, 393.574f, 0.25f);
-	drawTinyTree(1503.909f, 398.542f, 0.25f);
-	drawTinyTree(1481.567f, 401.698f, 0.25f);
-	drawTinyTree(1458.865f, 404.356f, 0.25f);
-	drawTinyTree(1435.864f, 406.509f, 0.25f);
-	drawTinyTree(1412.628f, 408.151f, 0.25f);
-	drawTinyTree(1389.220f, 409.277f, 0.25f);
-	drawTinyTree(1365.705f, 409.884f, 0.25f);
-	drawTinyTree(1342.146f, 409.971f, 0.25f);
-	drawTinyTree(1318.610f, 409.537f, 0.25f);
-	drawTinyTree(1295.159f, 408.584f, 0.25f);
-	drawTinyTree(1271.858f, 407.113f, 0.25f);
-	drawTinyTree(1248.772f, 405.130f, 0.25f);
-	drawTinyTree(1225.963f, 402.640f, 0.25f);
-	drawTinyTree(1203.494f, 399.649f, 0.25f);
-	drawTinyTree(1181.427f, 396.165f, 0.25f);
-	drawTinyTree(1159.822f, 392.198f, 0.25f);
+    // Small trees on Back Right Hill edge
+    drawTinyTree(1575.000f, 384.545f, 0.25f);
+    drawTinyTree(1554.296f, 389.291f, 0.25f);
+    drawTinyTree(1533.031f, 393.574f, 0.25f);
+    drawTinyTree(1503.909f, 398.542f, 0.25f);
+    drawTinyTree(1481.567f, 401.698f, 0.25f);
+    drawTinyTree(1458.865f, 404.356f, 0.25f);
+    drawTinyTree(1435.864f, 406.509f, 0.25f);
+    drawTinyTree(1412.628f, 408.151f, 0.25f);
+    drawTinyTree(1389.220f, 409.277f, 0.25f);
+    drawTinyTree(1365.705f, 409.884f, 0.25f);
+    drawTinyTree(1342.146f, 409.971f, 0.25f);
+    drawTinyTree(1318.610f, 409.537f, 0.25f);
+    drawTinyTree(1295.159f, 408.584f, 0.25f);
+    drawTinyTree(1271.858f, 407.113f, 0.25f);
+    drawTinyTree(1248.772f, 405.130f, 0.25f);
+    drawTinyTree(1225.963f, 402.640f, 0.25f);
+    drawTinyTree(1203.494f, 399.649f, 0.25f);
+    drawTinyTree(1181.427f, 396.165f, 0.25f);
+    drawTinyTree(1159.822f, 392.198f, 0.25f);
 
-	// 3. Front Center Rolling Hill
-	float h3_cx = 800.0f, h3_cy = 220.0f, h3_rx = 500.0f, h3_ry = 200.0f;
-	drawHill(h3_cx, h3_cy, h3_rx, h3_ry, 0.28f, 0.52f, 0.22f);
+    // 3. Front Center Rolling Hill
+    float h3_cx = 800.0f, h3_cy = 220.0f, h3_rx = 500.0f, h3_ry = 200.0f;
+    drawHill(h3_cx, h3_cy, h3_rx, h3_ry, 0.28f, 0.52f, 0.22f);
 
-	// Small trees on Center Hill edge
-	drawTinyTree(1153.553f, 361.421f, 0.22f);
-	drawTinyTree(1011.309f, 401.262f, 0.26f);
-	drawTinyTree(971.010f, 407.939f, 0.26f);
-	drawTinyTree(987.303f, 405.437f, 0.26f);
-	drawTinyTree(954.508f, 410.211f, 0.26f);
-	drawTinyTree(937.819f, 412.252f, 0.26f);
-	drawTinyTree(920.961f, 414.059f, 0.26f);
-	drawTinyTree(903.956f, 415.630f, 0.26f);
-	drawTinyTree(886.824f, 416.962f, 0.26f);
-	drawTinyTree(843.578f, 419.239f, 0.24f);
-	drawTinyTree(670.590f, 413.185f, 0.21f);
-	drawTinyTree(513.212f, 383.830f, 0.23f);
-	drawTinyTree(390.424f, 334.715f, 0.20f);
+    // Small trees on Center Hill edge
+    drawTinyTree(1153.553f, 361.421f, 0.22f);
+    drawTinyTree(1011.309f, 401.262f, 0.26f);
+    drawTinyTree(971.010f, 407.939f, 0.26f);
+    drawTinyTree(987.303f, 405.437f, 0.26f);
+    drawTinyTree(954.508f, 410.211f, 0.26f);
+    drawTinyTree(937.819f, 412.252f, 0.26f);
+    drawTinyTree(920.961f, 414.059f, 0.26f);
+    drawTinyTree(903.956f, 415.630f, 0.26f);
+    drawTinyTree(886.824f, 416.962f, 0.26f);
+    drawTinyTree(843.578f, 419.239f, 0.24f);
+    drawTinyTree(670.590f, 413.185f, 0.21f);
+    drawTinyTree(513.212f, 383.830f, 0.23f);
+    drawTinyTree(390.424f, 334.715f, 0.20f);
 }
 
 // [S1-OBJ-10] Sun
-// gosun
+
 void sun() {
-	glColor3f(1.0f, 0.85f, 0.0f);
-	drawCircle(520.0f, 520.0f, 40.0f, 40);
+    glColor3f(1.0f, 0.85f, 0.0f);
+    drawCircle(520.0f, 520.0f, 40.0f, 40);
 }
 
 // [S1-OBJ-11] Cloud
-// Puffy cloud made from overlapping circles (shadow puffs + bright highlight
-// puffs)
-void drawCloud(float cx, float cy, float scale) {
-	// Soft grey base puffs give the cloud volume/shadow
-	glColor3f(0.85f, 0.87f, 0.90f);
-	drawCircle(cx, cy - 5.0f * scale, 30.0f * scale, 30);
-	drawCircle(cx + 30.0f * scale, cy, 36.0f * scale, 30);
-	drawCircle(cx + 65.0f * scale, cy - 5.0f * scale, 26.0f * scale, 30);
-	drawCircle(cx + 20.0f * scale, cy - 15.0f * scale, 24.0f * scale, 30);
-	drawCircle(cx + 50.0f * scale, cy - 15.0f * scale, 22.0f * scale, 30);
 
-	// Bright white highlight puffs on top for a fluffy look
-	glColor3f(1.0f, 1.0f, 1.0f);
-	drawCircle(cx, cy, 26.0f * scale, 30);
-	drawCircle(cx + 30.0f * scale, cy + 8.0f * scale, 32.0f * scale, 30);
-	drawCircle(cx + 62.0f * scale, cy, 22.0f * scale, 30);
+void drawCloud(float cx, float cy, float scale) {
+    glColor3f(0.85f, 0.87f, 0.90f);
+    drawCircle(cx, cy - 5.0f * scale, 30.0f * scale, 30);
+    drawCircle(cx + 30.0f * scale, cy, 36.0f * scale, 30);
+    drawCircle(cx + 65.0f * scale, cy - 5.0f * scale, 26.0f * scale, 30);
+    drawCircle(cx + 20.0f * scale, cy - 15.0f * scale, 24.0f * scale, 30);
+    drawCircle(cx + 50.0f * scale, cy - 15.0f * scale, 22.0f * scale, 30);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    drawCircle(cx, cy, 26.0f * scale, 30);
+    drawCircle(cx + 30.0f * scale, cy + 8.0f * scale, 32.0f * scale, 30);
+    drawCircle(cx + 62.0f * scale, cy, 22.0f * scale, 30);
 }
 
-// Scatters several clouds across the sky
 void drawClouds() {
-	static const float baseX[] = {120.0f, 430.0f,  700.0f,
-								  980.0f, 1250.0f, 1480.0f};
-	static const float baseY[] = {880.0f, 930.0f, 860.0f,
-								  910.0f, 870.0f, 920.0f};
-	static const float scale[] = {1.0f, 0.8f, 1.2f, 0.9f, 1.1f, 0.7f};
-	static const int numClouds = 6;
+    static const float baseX[] = { 120.0f, 430.0f,  700.0f,
+                                  980.0f, 1250.0f, 1480.0f };
+    static const float baseY[] = { 880.0f, 930.0f, 860.0f,
+                                  910.0f, 870.0f, 920.0f };
+    static const float scale[] = { 1.0f, 0.8f, 1.2f, 0.9f, 1.1f, 0.7f };
+    static const int numClouds = 6;
 
-	float wrapWidth = WIN_W + 400.0f;
-	float dx = fmodf(cloudOffset, wrapWidth);
+    float wrapWidth = WIN_W + 400.0f;
+    float dx = fmodf(cloudOffset, wrapWidth);
 
-	for (int pass = 0; pass < 2; pass++) {
-		glPushMatrix();
-		glTranslatef(dx - pass * wrapWidth, 0.0f, 0.0f);
-		for (int i = 0; i < numClouds; i++) {
-			drawCloud(baseX[i], baseY[i], scale[i]);
-		}
-		glPopMatrix();
-	}
+    for (int pass = 0; pass < 2; pass++) {
+        glPushMatrix();
+        glTranslatef(dx - pass * wrapWidth, 0.0f, 0.0f);
+        for (int i = 0; i < numClouds; i++) {
+            drawCloud(baseX[i], baseY[i], scale[i]);
+        }
+        glPopMatrix();
+    }
 }
 
 // [S1-OBJ-12] Night Overlay
-// gonight
+
 void drawNightOverlay() {
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	// Dark blue translucent veil over the whole scene
-	glColor4f(0.02f, 0.02f, 0.15f, 0.55f);
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 0.0f);
-	glVertex2f(WIN_W, 0.0f);
-	glVertex2f(WIN_W, WIN_H);
-	glVertex2f(0.0f, WIN_H);
-	glEnd();
+    glColor4f(0.02f, 0.02f, 0.15f, 0.55f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(WIN_W, 0.0f);
+    glVertex2f(WIN_W, WIN_H);
+    glVertex2f(0.0f, WIN_H);
+    glEnd();
 
-	if (!rainMode) {
-		// Stars scattered across the sky
-		glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
-		glPointSize(2.5f);
-		glBegin(GL_POINTS);
-		float starPositions[][2] = {
-			{80, 900},	 {150, 850},  {230, 920},  {310, 870},	{400, 940},
-			{480, 880},	 {560, 910},  {650, 860},  {730, 930},	{820, 890},
-			{900, 950},	 {980, 870},  {1060, 920}, {1150, 880}, {1230, 940},
-			{1310, 860}, {1400, 910}, {1480, 870}, {60, 780},	{200, 800},
-			{350, 760},	 {520, 790},  {700, 770},  {880, 800},	{1050, 760},
-			{1220, 790}, {1400, 770}, {1550, 800}, {120, 700},	{950, 700}};
-		int numStars = sizeof(starPositions) / sizeof(starPositions[0]);
-		for (int i = 0; i < numStars; i++) {
-			glVertex2f(starPositions[i][0], starPositions[i][1]);
-		}
-		glEnd();
+    if (!rainMode) {
+        glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
+        glPointSize(2.5f);
+        glBegin(GL_POINTS);
+        float starPositions[][2] = {
+            {80, 900},	 {150, 850},  {230, 920},  {310, 870},	{400, 940},
+            {480, 880},	 {560, 910},  {650, 860},  {730, 930},	{820, 890},
+            {900, 950},	 {980, 870},  {1060, 920}, {1150, 880}, {1230, 940},
+            {1310, 860}, {1400, 910}, {1480, 870}, {60, 780},	{200, 800},
+            {350, 760},	 {520, 790},  {700, 770},  {880, 800},	{1050, 760},
+            {1220, 790}, {1400, 770}, {1550, 800}, {120, 700},	{950, 700} };
+        int numStars = sizeof(starPositions) / sizeof(starPositions[0]);
+        for (int i = 0; i < numStars; i++) {
+            glVertex2f(starPositions[i][0], starPositions[i][1]);
+        }
+        glEnd();
 
-		// Moon, drawn over the sun's position
-		glColor4f(0.92f, 0.92f, 0.85f, 1.0f);
-		glPushMatrix();
-		glTranslatef(550.0f, 250.0f, 0.0f);
-		drawCircle(520.0f, 520.0f, 40.0f, 40);
-		glPopMatrix();
-	}
+        glColor4f(0.92f, 0.92f, 0.85f, 1.0f);
+        glPushMatrix();
+        glTranslatef(550.0f, 250.0f, 0.0f);
+        drawCircle(520.0f, 520.0f, 40.0f, 40);
+        glPopMatrix();
+    }
 
-	glDisable(GL_BLEND);
+    glDisable(GL_BLEND);
 }
 
 // [S1-OBJ-13] Ground and Path
-void drawGroundAndPath() {
-	glColor3f(0.30f, 0.55f, 0.25f);
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 0.0f);
-	glVertex2f(WIN_W, 0.0f);
-	glVertex2f(WIN_W, WIN_H * 0.33);
-	glVertex2f(0.0f, WIN_H * 0.33);
-	glEnd();
 
-	glColor3f(0.55f, 0.42f, 0.28f);
-	glBegin(GL_QUAD_STRIP);
-	glVertex2f(0.0f * WIN_W / 1000.0f, 60.0f * WIN_H / 1000.0f);
-	glVertex2f(0.0f * WIN_W / 1000.0f, 100.0f * WIN_H / 1000.0f);
-	glVertex2f(250.0f * WIN_W / 1000.0f, 70.0f * WIN_H / 1000.0f);
-	glVertex2f(250.0f * WIN_W / 1000.0f, 110.0f * WIN_H / 1000.0f);
-	glVertex2f(500.0f * WIN_W / 1000.0f, 55.0f * WIN_H / 1000.0f);
-	glVertex2f(500.0f * WIN_W / 1000.0f, 95.0f * WIN_H / 1000.0f);
-	glVertex2f(750.0f * WIN_W / 1000.0f, 75.0f * WIN_H / 1000.0f);
-	glVertex2f(750.0f * WIN_W / 1000.0f, 115.0f * WIN_H / 1000.0f);
-	glVertex2f(1000.0f * WIN_W / 1000.0f, 60.0f * WIN_H / 1000.0f);
-	glVertex2f(1000.0f * WIN_W / 1000.0f, 100.0f * WIN_H / 1000.0f);
-	glEnd();
+void drawGroundAndPath() {
+    glColor3f(0.30f, 0.55f, 0.25f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(WIN_W, 0.0f);
+    glVertex2f(WIN_W, WIN_H * 0.33);
+    glVertex2f(0.0f, WIN_H * 0.33);
+    glEnd();
+
+    glColor3f(0.55f, 0.42f, 0.28f);
+    glBegin(GL_QUAD_STRIP);
+    glVertex2f(0.0f * WIN_W / 1000.0f, 60.0f * WIN_H / 1000.0f);
+    glVertex2f(0.0f * WIN_W / 1000.0f, 100.0f * WIN_H / 1000.0f);
+    glVertex2f(250.0f * WIN_W / 1000.0f, 70.0f * WIN_H / 1000.0f);
+    glVertex2f(250.0f * WIN_W / 1000.0f, 110.0f * WIN_H / 1000.0f);
+    glVertex2f(500.0f * WIN_W / 1000.0f, 55.0f * WIN_H / 1000.0f);
+    glVertex2f(500.0f * WIN_W / 1000.0f, 95.0f * WIN_H / 1000.0f);
+    glVertex2f(750.0f * WIN_W / 1000.0f, 75.0f * WIN_H / 1000.0f);
+    glVertex2f(750.0f * WIN_W / 1000.0f, 115.0f * WIN_H / 1000.0f);
+    glVertex2f(1000.0f * WIN_W / 1000.0f, 60.0f * WIN_H / 1000.0f);
+    glVertex2f(1000.0f * WIN_W / 1000.0f, 100.0f * WIN_H / 1000.0f);
+    glEnd();
 }
 
 // [S1-SCENE] Peaceful Village Scene
 void scene1() {
-	if (!isNightMode && !rainMode) {
-		glPushMatrix();
-		glTranslatef(550.0f, 250.0f, 0.0f);
-		sun();
-		glPopMatrix();
-	}
+    if (!isNightMode && !rainMode) {
+        glPushMatrix();
+        glTranslatef(550.0f, 250.0f, 0.0f);
+        sun();
+        glPopMatrix();
+    }
 
-	drawClouds();
+    drawClouds();
 
-	drawMountains();
-	drawHills();
-	drawGroundAndPath();
+    drawMountains();
+    drawHills();
+    drawGroundAndPath();
 
-	// ================= BACKGROUND TREES (Shifted up onto hills behind back row
-	// huts) =================
-	drawTree(160.0f, 285.0f, 0.70f);
-	drawTree(400.0f, 280.0f, 0.75f);
-	drawTree(640.0f, 285.0f, 0.70f);
-	drawTree(870.0f, 280.0f, 0.75f);
-	drawTree(1110.0f, 285.0f, 0.70f);
-	drawTree(1340.0f, 280.0f, 0.75f);
+    // ================= BACKGROUND TREES (Shifted up onto hills behind back row
+    // huts) =================
+    drawTree(160.0f, 285.0f, 0.70f);
+    drawTree(400.0f, 280.0f, 0.75f);
+    drawTree(640.0f, 285.0f, 0.70f);
+    drawTree(870.0f, 280.0f, 0.75f);
+    drawTree(1110.0f, 285.0f, 0.70f);
+    drawTree(1340.0f, 280.0f, 0.75f);
 
-	// ================= FURTHEST ROW (Deep background) =================
-	glPushMatrix();
-	glTranslatef(50.0f, 225.0f, 0.0f);
-	glScalef(0.24f, 0.27f, 1.0f);
-	hut3(HutColor7);
-	glPopMatrix();
+    // ================= FURTHEST ROW (Deep background) =================
+    glPushMatrix();
+    glTranslatef(50.0f, 225.0f, 0.0f);
+    glScalef(0.24f, 0.27f, 1.0f);
+    hut3(HutColor7);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(280.0f, 222.0f, 0.0f);
-	glScalef(0.28f, 0.25f, 1.0f);
-	hut1(HutColor14);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(280.0f, 222.0f, 0.0f);
+    glScalef(0.28f, 0.25f, 1.0f);
+    hut1(HutColor14);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(520.0f, 220.0f, 0.0f);
-	glScalef(0.25f, 0.29f, 1.0f);
-	hut5(HutColor2);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(520.0f, 220.0f, 0.0f);
+    glScalef(0.25f, 0.29f, 1.0f);
+    hut5(HutColor2);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(760.0f, 218.0f, 0.0f);
-	glScalef(0.27f, 0.24f, 1.0f);
-	hut2(HutColor19);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(760.0f, 218.0f, 0.0f);
+    glScalef(0.27f, 0.24f, 1.0f);
+    hut2(HutColor19);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(990.0f, 215.0f, 0.0f);
-	glScalef(0.23f, 0.26f, 1.0f);
-	hut4(HutColor6);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(990.0f, 215.0f, 0.0f);
+    glScalef(0.23f, 0.26f, 1.0f);
+    hut4(HutColor6);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(1220.0f, 212.0f, 0.0f);
-	glScalef(0.29f, 0.28f, 1.0f);
-	hut1(HutColor11);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1220.0f, 212.0f, 0.0f);
+    glScalef(0.29f, 0.28f, 1.0f);
+    hut1(HutColor11);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(1450.0f, 210.0f, 0.0f);
-	glScalef(0.26f, 0.23f, 1.0f);
-	hut3(HutColor4);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1450.0f, 210.0f, 0.0f);
+    glScalef(0.26f, 0.23f, 1.0f);
+    hut3(HutColor4);
+    glPopMatrix();
 
-	// ================= MIDDLE ROW =================
-	glPushMatrix();
-	glTranslatef(-10.0f, 190.0f, 0.0f);
-	glScalef(0.24f, 0.28f, 1.0f);
-	hut5(HutColor16);
-	glPopMatrix();
+    // ================= MIDDLE ROW =================
+    glPushMatrix();
+    glTranslatef(-10.0f, 190.0f, 0.0f);
+    glScalef(0.24f, 0.28f, 1.0f);
+    hut5(HutColor16);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(200.0f, 188.0f, 0.0f);
-	glScalef(0.28f, 0.26f, 1.0f);
-	hut2(HutColor9);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(200.0f, 188.0f, 0.0f);
+    glScalef(0.28f, 0.26f, 1.0f);
+    hut2(HutColor9);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(420.0f, 185.0f, 0.0f);
-	glScalef(0.25f, 0.24f, 1.0f);
-	hut4(HutColor20);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(420.0f, 185.0f, 0.0f);
+    glScalef(0.25f, 0.24f, 1.0f);
+    hut4(HutColor20);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(650.0f, 182.0f, 0.0f);
-	glScalef(0.27f, 0.29f, 1.0f);
-	hut1(HutColor5);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(650.0f, 182.0f, 0.0f);
+    glScalef(0.27f, 0.29f, 1.0f);
+    hut1(HutColor5);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(880.0f, 180.0f, 0.0f);
-	glScalef(0.23f, 0.25f, 1.0f);
-	hut3(HutColor18);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(880.0f, 180.0f, 0.0f);
+    glScalef(0.23f, 0.25f, 1.0f);
+    hut3(HutColor18);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(1100.0f, 178.0f, 0.0f);
-	glScalef(0.26f, 0.27f, 1.0f);
-	hut5(HutColor12);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1100.0f, 178.0f, 0.0f);
+    glScalef(0.26f, 0.27f, 1.0f);
+    hut5(HutColor12);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(1340.0f, 175.0f, 0.0f);
-	glScalef(0.29f, 0.24f, 1.0f);
-	hut2(HutColor3);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1340.0f, 175.0f, 0.0f);
+    glScalef(0.29f, 0.24f, 1.0f);
+    hut2(HutColor3);
+    glPopMatrix();
 
-	// ================= FRONT ROW (Just behind path) =================
-	glPushMatrix();
-	glTranslatef(100.0f, 150.0f, 0.0f);
-	glScalef(0.24f, 0.26f, 1.0f);
-	hut4(HutColor15);
-	glPopMatrix();
+    // ================= FRONT ROW (Just behind path) =================
+    glPushMatrix();
+    glTranslatef(100.0f, 150.0f, 0.0f);
+    glScalef(0.24f, 0.26f, 1.0f);
+    hut4(HutColor15);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(340.0f, 145.0f, 0.0f);
-	glScalef(0.28f, 0.23f, 1.0f);
-	hut1(HutColor8);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(340.0f, 145.0f, 0.0f);
+    glScalef(0.28f, 0.23f, 1.0f);
+    hut1(HutColor8);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(580.0f, 140.0f, 0.0f);
-	glScalef(0.25f, 0.28f, 1.0f);
-	hut3(HutColor17);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(580.0f, 140.0f, 0.0f);
+    glScalef(0.25f, 0.28f, 1.0f);
+    hut3(HutColor17);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(820.0f, 135.0f, 0.0f);
-	glScalef(0.27f, 0.25f, 1.0f);
-	hut5(HutColor1);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(820.0f, 135.0f, 0.0f);
+    glScalef(0.27f, 0.25f, 1.0f);
+    hut5(HutColor1);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(1050.0f, 132.0f, 0.0f);
-	glScalef(0.23f, 0.29f, 1.0f);
-	hut2(HutColor13);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1050.0f, 132.0f, 0.0f);
+    glScalef(0.23f, 0.29f, 1.0f);
+    hut2(HutColor13);
+    glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(1280.0f, 130.0f, 0.0f);
-	glScalef(0.26f, 0.24f, 1.0f);
-	hut4(HutColor10);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1280.0f, 130.0f, 0.0f);
+    glScalef(0.26f, 0.24f, 1.0f);
+    hut4(HutColor10);
+    glPopMatrix();
 
-	// ================= FOREGROUND TREES (Moved to outer margins to frame the
-	// scene) =================
-	drawTree(40.0f, 100.0f, 1.2f);
-	drawTree(1560.0f, 100.0f, 1.2f);
+    // ================= FOREGROUND TREES (Moved to outer margins to frame the
+    // scene) =================
+    drawTree(40.0f, 100.0f, 1.2f);
+    drawTree(1560.0f, 100.0f, 1.2f);
 }
 
 void scene1Display() {
-	if (isNightMode)
-		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
-	else
-		glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
+    if (isNightMode)
+        glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
+    else
+        glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
 
-	glClear(GL_COLOR_BUFFER_BIT);
-	scene1();
+    glClear(GL_COLOR_BUFFER_BIT);
+    scene1();
 
-	if (bombingStarted) {
-		drawCargoPlane(planeX, planeY, 0.8f);
-		if (bombDropped && !bombHit)
-			drawBomb(bombX, bombY);
-		if (flashActive)
-			drawExplosionFlash();
-	}
+    if (bombingStarted) {
+        drawCargoPlane(planeX, planeY, 0.8f);
+        if (bombDropped && !bombHit)
+            drawBomb(bombX, bombY);
+        if (flashActive)
+            drawExplosionFlash();
+    }
 
-	if (isNightMode)
-		drawNightOverlay();
-	drawRain();
+    if (isNightMode)
+        drawNightOverlay();
+    drawRain();
 }
 
 void scene1Update() {
-	cloudOffset += CLOUD_SPEED;
+    cloudOffset += CLOUD_SPEED;
 
-	if (bombingStarted) {
-		planeX += PLANE_SPEED;
+    if (bombingStarted) {
+        planeX += PLANE_SPEED;
 
-		if (planePassOnly) {
-			if (planeX > WIN_W + 350.0f)
-				resetBombingAnimation();
-			return;
-		}
+        if (planePassOnly) {
+            if (planeX > WIN_W + 350.0f)
+                resetBombingAnimation();
+            return;
+        }
 
-		if (!bombDropped && planeX + 20.0f >= bombX) {
-			bombDropped = true;
-			bombY = planeY - 45.0f;
-		}
+        if (!bombDropped && planeX + 20.0f >= bombX) {
+            bombDropped = true;
+            bombY = planeY - 45.0f;
+        }
 
-		if (bombDropped && !bombHit) {
-			bombY -= 9.0f;
-			if (bombY <= 160.0f) {
-				bombY = 160.0f;
-				bombHit = true;
-				flashActive = true;
-				flashTimer = 1.2f;
-			}
-		}
+        if (bombDropped && !bombHit) {
+            bombY -= 9.0f;
+            if (bombY <= 160.0f) {
+                bombY = 160.0f;
+                bombHit = true;
+                flashActive = true;
+                flashTimer = 1.2f;
+            }
+        }
 
-		if (flashActive) {
-			flashTimer -= 0.016f;
-			if (flashTimer <= 0.0f) {
-				flashTimer = 0.0f;
-				flashActive = false;
-			}
-		}
+        if (flashActive) {
+            flashTimer -= 0.016f;
+            if (flashTimer <= 0.0f) {
+                flashTimer = 0.0f;
+                flashActive = false;
+            }
+        }
 
-		if (bombHit && !flashActive) {
-			transitionTimer += 0.056f;
-			if (transitionTimer > 0.5f) {
-				bombingStarted = false;
-				currentScene = 2;
-			}
-		}
-	}
+        if (bombHit && !flashActive) {
+            transitionTimer += 0.056f;
+            if (transitionTimer > 0.5f) {
+                bombingStarted = false;
+                currentScene = 2;
+            }
+        }
+    }
 }
 
 void scene1Keyboard(unsigned char key, int, int) {
-	if (key == 'p' || key == 'P') {
-		resetBombingAnimation();
-		planePassOnly = true;
-		bombingStarted = true;
-	} else {
-		handleEnvironmentKey(key);
-	}
+    if (key == 'p' || key == 'P') {
+        resetBombingAnimation();
+        planePassOnly = true;
+        bombingStarted = true;
+    }
+    else {
+        handleEnvironmentKey(key);
+    }
 }
 
 void scene1Mouse(int button, int state, int x, int) {
-	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !bombingStarted) {
-		resetBombingAnimation();
-		int windowWidth = std::max(1, glutGet(GLUT_WINDOW_WIDTH));
-		bombX = static_cast<float>(x) * WIN_W / windowWidth;
-		bombingStarted = true;
-	}
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !bombingStarted) {
+        resetBombingAnimation();
+        int windowWidth = std::max(1, glutGet(GLUT_WINDOW_WIDTH));
+        bombX = static_cast<float>(x) * WIN_W / windowWidth;
+        bombingStarted = true;
+    }
 }
 
 void scene1SpecialKeys(int key, int, int) {
-	if (key == GLUT_KEY_RIGHT)
-		switchScene(2);
-	else if (key == GLUT_KEY_LEFT)
-		switchScene(4);
+    if (key == GLUT_KEY_RIGHT)
+        switchScene(2);
+    else if (key == GLUT_KEY_LEFT)
+        switchScene(4);
 }
 
 //---------------------------END OF SCENE1-------------------------
 
-// ---------------- Scene 2 replacement state ----------------
+// ---------------- Scene 2  ----------------
 #define MAX_USER_FIRES 15
 #define MAX_DEBRIS 15
 
@@ -1145,1634 +1135,1641 @@ float debrisX[MAX_DEBRIS];
 float debrisY[MAX_DEBRIS];
 int debrisCount = 0;
 
-const Color3 BurntBlack = {0.05f, 0.05f, 0.05f};
-const Color3 Charcoal = {0.14f, 0.13f, 0.12f};
-const Color3 CharcoalLight = {0.26f, 0.24f, 0.22f};
-const Color3 AshGray = {0.55f, 0.53f, 0.50f};
-const Color3 BrickRed = {0.55f, 0.20f, 0.15f};
-const Color3 BrickBrown = {0.45f, 0.28f, 0.16f};
-const Color3 BrickOrange = {0.62f, 0.34f, 0.18f};
-const Color3 BurntWood = {0.22f, 0.15f, 0.09f};
-const Color3 WoodBrown = {0.42f, 0.27f, 0.14f};
-const Color3 WoodBrownLight = {0.55f, 0.38f, 0.20f};
-const Color3 RoofDarkRed = {0.42f, 0.16f, 0.14f};
-const Color3 RoofGray = {0.34f, 0.34f, 0.36f};
-const Color3 DustyGreen = {0.34f, 0.42f, 0.24f};
-const Color3 DirtBrown = {0.40f, 0.30f, 0.20f};
-const Color3 EmberYellow = {1.0f, 0.80f, 0.20f};
-const Color3 EmberOrange = {0.95f, 0.45f, 0.10f};
-const Color3 EmberRed = {0.80f, 0.15f, 0.10f};
+const Color3 BurntBlack = { 0.05f, 0.05f, 0.05f };
+const Color3 Charcoal = { 0.14f, 0.13f, 0.12f };
+const Color3 CharcoalLight = { 0.26f, 0.24f, 0.22f };
+const Color3 AshGray = { 0.55f, 0.53f, 0.50f };
+const Color3 BrickRed = { 0.55f, 0.20f, 0.15f };
+const Color3 BrickBrown = { 0.45f, 0.28f, 0.16f };
+const Color3 BrickOrange = { 0.62f, 0.34f, 0.18f };
+const Color3 BurntWood = { 0.22f, 0.15f, 0.09f };
+const Color3 WoodBrown = { 0.42f, 0.27f, 0.14f };
+const Color3 WoodBrownLight = { 0.55f, 0.38f, 0.20f };
+const Color3 RoofDarkRed = { 0.42f, 0.16f, 0.14f };
+const Color3 RoofGray = { 0.34f, 0.34f, 0.36f };
+const Color3 DustyGreen = { 0.34f, 0.42f, 0.24f };
+const Color3 DirtBrown = { 0.40f, 0.30f, 0.20f };
+const Color3 EmberYellow = { 1.0f, 0.80f, 0.20f };
+const Color3 EmberOrange = { 0.95f, 0.45f, 0.10f };
+const Color3 EmberRed = { 0.80f, 0.15f, 0.10f };
 
 float lightningFlash = 0.0f;
 float lightningTargetX = 0.0f;
 float lightningTargetY = 0.0f;
 
 void initRain() {
-	for (int i = 0; i < MAX_RAINDROPS; i++) {
-		rainX[i] = rand() % WIN_W;
-		rainY[i] = rand() % WIN_H;
-	}
+    for (int i = 0; i < MAX_RAINDROPS; i++) {
+        rainX[i] = rand() % WIN_W;
+        rainY[i] = rand() % WIN_H;
+    }
 }
 
 void updateRain() {
-	if (!rainMode)
-		return;
+    if (!rainMode)
+        return;
 
-	for (int i = 0; i < MAX_RAINDROPS; i++) {
-		rainY[i] -= 15;		   // droping
-		rainX[i] += windForce; // to move with the rain
+    for (int i = 0; i < MAX_RAINDROPS; i++) {
+        rainY[i] -= 15;		   // droping
+        rainX[i] += windForce; // to move with the rain
 
-		// Reset
-		// Wrap vertically and keep drops inside the screen horizontally.
-		if (rainY[i] < 0) {
-			rainY[i] = WIN_H + (rand() % 120);
-			rainX[i] = rand() % WIN_W;
-		}
-		if (rainX[i] < -40.0f)
-			rainX[i] = WIN_W + 40.0f;
-		if (rainX[i] > WIN_W + 40.0f)
-			rainX[i] = -40.0f;
-	}
+        // Reset
+        // Wrap vertically and keep drops inside the screen horizontally.
+        if (rainY[i] < 0) {
+            rainY[i] = WIN_H + (rand() % 120);
+            rainX[i] = rand() % WIN_W;
+        }
+        if (rainX[i] < -40.0f)
+            rainX[i] = WIN_W + 40.0f;
+        if (rainX[i] > WIN_W + 40.0f)
+            rainX[i] = -40.0f;
+    }
 }
 
 void drawRain() {
-	if (!rainMode)
-		return;
+    if (!rainMode)
+        return;
 
-	glColor3f(0.7f, 0.8f, 1.0f);
-	glLineWidth(1.5f);
+    glColor3f(0.7f, 0.8f, 1.0f);
+    glLineWidth(1.5f);
 
-	glBegin(GL_LINES);
-	for (int i = 0; i < MAX_RAINDROPS; i++) {
-		glVertex2i(rainX[i], rainY[i]);
-		glVertex2f(
-			rainX[i] + windForce * 2.0f,
-			rainY[i] -
-				15.0f); // boot is moved to right or left depending on wind
-	}
-	glEnd();
+    glBegin(GL_LINES);
+    for (int i = 0; i < MAX_RAINDROPS; i++) {
+        glVertex2i(rainX[i], rainY[i]);
+        glVertex2f(
+            rainX[i] + windForce * 2.0f,
+            rainY[i] -
+            15.0f); // boot is moved to right or left depending on wind
+    }
+    glEnd();
 }
+// [S2-OBJ-01] Night/Disaster Background -> NightScene
 
 void NightScene() {
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glColor4f(0.02f, 0.02f, 0.15f, 0.65f);
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 0.0f);
-	glVertex2f((float)WIN_W, 0.0f);
-	glVertex2f((float)WIN_W, (float)WIN_H);
-	glVertex2f(0.0f, (float)WIN_H);
-	glEnd();
+    glColor4f(0.02f, 0.02f, 0.15f, 0.65f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f((float)WIN_W, 0.0f);
+    glVertex2f((float)WIN_W, (float)WIN_H);
+    glVertex2f(0.0f, (float)WIN_H);
+    glEnd();
 
-	if (!rainMode) {
-		glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
-		glPointSize(2.5f);
-		glBegin(GL_POINTS);
-		float starPositions[][2] = {
-			{80, 900},	 {150, 850},  {230, 920},  {310, 870},	{400, 940},
-			{480, 880},	 {560, 910},  {650, 860},  {730, 930},	{820, 890},
-			{900, 950},	 {980, 870},  {1060, 920}, {1150, 880}, {1230, 940},
-			{1310, 860}, {1400, 910}, {1480, 870}, {60, 780},	{200, 800},
-			{350, 760},	 {520, 790},  {700, 770},  {880, 800},	{1050, 760},
-			{1220, 790}, {1400, 770}, {1550, 800}, {120, 700},	{950, 700}};
-		int numStars = sizeof(starPositions) / sizeof(starPositions[0]);
-		for (int i = 0; i < numStars; i++) {
-			glVertex2f(starPositions[i][0], starPositions[i][1]);
-		}
-		glEnd();
+    if (!rainMode) {
+        glColor4f(1.0f, 1.0f, 1.0f, 0.9f);
+        glPointSize(2.5f);
+        glBegin(GL_POINTS);
+        float starPositions[][2] = {
+            {80, 900},	 {150, 850},  {230, 920},  {310, 870},	{400, 940},
+            {480, 880},	 {560, 910},  {650, 860},  {730, 930},	{820, 890},
+            {900, 950},	 {980, 870},  {1060, 920}, {1150, 880}, {1230, 940},
+            {1310, 860}, {1400, 910}, {1480, 870}, {60, 780},	{200, 800},
+            {350, 760},	 {520, 790},  {700, 770},  {880, 800},	{1050, 760},
+            {1220, 790}, {1400, 770}, {1550, 800}, {120, 700},	{950, 700} };
+        int numStars = sizeof(starPositions) / sizeof(starPositions[0]);
+        for (int i = 0; i < numStars; i++) {
+            glVertex2f(starPositions[i][0], starPositions[i][1]);
+        }
+        glEnd();
 
-		glColor4f(0.92f, 0.92f, 0.85f, 1.0f);
-		glPushMatrix();
-		glTranslatef(550.0f, 250.0f, 0.0f);
-		drawCircle(520.0f, 520.0f, 40.0f, 40);
-		glPopMatrix();
-	}
+        glColor4f(0.92f, 0.92f, 0.85f, 1.0f);
+        glPushMatrix();
+        glTranslatef(550.0f, 250.0f, 0.0f);
+        drawCircle(520.0f, 520.0f, 40.0f, 40);
+        glPopMatrix();
+    }
 
-	glDisable(GL_BLEND);
+    glDisable(GL_BLEND);
 }
+// [S2-OBJ-02] Lightning -> drawLightning
 
 void drawLightning() {
-	if (lightningFlash <= 0.0f)
-		return;
+    if (lightningFlash <= 0.0f)
+        return;
 
-	// 1. Screen Flash (Semi-transparent white overlay)
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // 1. Screen Flash
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glColor4f(1.0f, 1.0f, 1.0f, 0.4f); // screen flash
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 0.0f);
-	glVertex2f(WIN_W, 0.0f);
-	glVertex2f(WIN_W, WIN_H);
-	glVertex2f(0.0f, WIN_H);
-	glEnd();
+    glColor4f(1.0f, 1.0f, 1.0f, 0.4f); // screen flash
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(WIN_W, 0.0f);
+    glVertex2f(WIN_W, WIN_H);
+    glVertex2f(0.0f, WIN_H);
+    glEnd();
 
-	// 2. Zig-zag Lightning Bolt (Top to Target)
-	glColor3f(1.0f, 1.0f, 1.0f);
-	glLineWidth(3.0f);
+    // 2. Zig zag 
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glLineWidth(3.0f);
 
-	float midY1 = (WIN_H + lightningTargetY) * 0.66f;
-	float midY2 = (WIN_H + lightningTargetY) * 0.33f;
+    float midY1 = (WIN_H + lightningTargetY) * 0.66f;
+    float midY2 = (WIN_H + lightningTargetY) * 0.33f;
 
-	glBegin(GL_LINE_STRIP);
-	glVertex2f(lightningTargetX + (rand() % 40 - 20), WIN_H); // Top start
-	glVertex2f(lightningTargetX + (rand() % 60 - 30), midY1); // Zig
-	glVertex2f(lightningTargetX + (rand() % 60 - 30), midY2); // Zag
-	glVertex2f(lightningTargetX, lightningTargetY);			  // Target impact
-	glEnd();
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(lightningTargetX + (rand() % 40 - 20), WIN_H); // Top start
+    glVertex2f(lightningTargetX + (rand() % 60 - 30), midY1); // Zig
+    glVertex2f(lightningTargetX + (rand() % 60 - 30), midY2); // Zag
+    glVertex2f(lightningTargetX, lightningTargetY);			  // Target impact
+    glEnd();
 
-	glDisable(GL_BLEND);
+    glDisable(GL_BLEND);
 }
+// [S2-OBJ-03] Irregular Debris/Smoke Blob -> drawBlob
 
 void drawBlob(float cx, float cy, float rx, float ry, float seed,
-			  Color3 color) {
-	glColor3f(color.r, color.g, color.b);
-	glBegin(GL_POLYGON);
-	for (int i = 0; i < 10; i++) {
-		float angle = 2.0f * (float)PI * i / 10.0f;
-		float wobble = 1.0f + 0.25f * sinf(angle * 3.0f + seed);
-		glVertex2f(cx + rx * wobble * cosf(angle),
-				   cy + ry * wobble * sinf(angle));
-	}
-	glEnd();
+    Color3 color) {
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < 10; i++) {
+        float angle = 2.0f * (float)PI * i / 10.0f;
+        float wobble = 1.0f + 0.25f * sinf(angle * 3.0f + seed);
+        glVertex2f(cx + rx * wobble * cosf(angle),
+            cy + ry * wobble * sinf(angle));
+    }
+    glEnd();
 }
+// [S2-OBJ-04] Small Crater -> drawCraterSmall
 
 void drawCraterSmall(float x, float y, float scale) {
-	drawBlob(x, y, 26.0f * scale, 18.0f * scale, x, DirtBrown);
-	drawBlob(x, y, 14.0f * scale, 10.0f * scale, x + 1.0f, Charcoal);
+    drawBlob(x, y, 26.0f * scale, 18.0f * scale, x, DirtBrown);
+    drawBlob(x, y, 14.0f * scale, 10.0f * scale, x + 1.0f, Charcoal);
 }
+// [S2-OBJ-05] Brick -> drawBrick
 
 void drawBrick(float x, float y, float w, float h, float rotation,
-			   Color3 color) {
-	float hw = w * 0.5f;
-	float hh = h * 0.5f;
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
-	glColor3f(color.r, color.g, color.b);
-	glBegin(GL_QUADS);
-	glVertex2f(-hw, -hh);
-	glVertex2f(hw, -hh);
-	glVertex2f(hw, hh);
-	glVertex2f(-hw, hh);
-	glEnd();
+    Color3 color) {
+    float hw = w * 0.5f;
+    float hh = h * 0.5f;
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_QUADS);
+    glVertex2f(-hw, -hh);
+    glVertex2f(hw, -hh);
+    glVertex2f(hw, hh);
+    glVertex2f(-hw, hh);
+    glEnd();
 
-	glColor3f(color.r * 0.55f, color.g * 0.55f, color.b * 0.55f);
-	glLineWidth(1.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex2f(-hw, -hh);
-	glVertex2f(hw, -hh);
-	glVertex2f(hw, hh);
-	glVertex2f(-hw, hh);
-	glEnd();
-	glPopMatrix();
+    glColor3f(color.r * 0.55f, color.g * 0.55f, color.b * 0.55f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(-hw, -hh);
+    glVertex2f(hw, -hh);
+    glVertex2f(hw, hh);
+    glVertex2f(-hw, hh);
+    glEnd();
+    glPopMatrix();
 }
+// [S2-OBJ-06] Small Brick Pile -> drawBrickPileSmall
 
 void drawBrickPileSmall(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	drawBrick(-14.0f, 4.0f, 26.0f, 12.0f, -6.0f, BrickRed);
-	drawBrick(10.0f, 2.0f, 24.0f, 11.0f, 8.0f, BrickBrown);
-	drawBrick(-2.0f, 14.0f, 22.0f, 10.0f, 3.0f, BrickOrange);
-	drawBrick(20.0f, 12.0f, 20.0f, 10.0f, -10.0f, BrickRed);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    drawBrick(-14.0f, 4.0f, 26.0f, 12.0f, -6.0f, BrickRed);
+    drawBrick(10.0f, 2.0f, 24.0f, 11.0f, 8.0f, BrickBrown);
+    drawBrick(-2.0f, 14.0f, 22.0f, 10.0f, 3.0f, BrickOrange);
+    drawBrick(20.0f, 12.0f, 20.0f, 10.0f, -10.0f, BrickRed);
+    glPopMatrix();
 }
+// [S2-OBJ-07] Large Brick Pile -> drawBrickPileLarge
 
 void drawBrickPileLarge(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	drawBrick(-40.0f, 4.0f, 30.0f, 13.0f, -4.0f, BrickBrown);
-	drawBrick(-8.0f, 3.0f, 32.0f, 13.0f, 5.0f, BrickRed);
-	drawBrick(26.0f, 5.0f, 28.0f, 12.0f, -8.0f, BrickOrange);
-	drawBrick(52.0f, 2.0f, 26.0f, 12.0f, 10.0f, BrickRed);
-	drawBrick(-22.0f, 18.0f, 28.0f, 12.0f, 6.0f, BrickRed);
-	drawBrick(6.0f, 20.0f, 26.0f, 12.0f, -5.0f, BrickBrown);
-	drawBrick(34.0f, 17.0f, 24.0f, 11.0f, 9.0f, BrickOrange);
-	drawBrick(-6.0f, 34.0f, 22.0f, 10.0f, -12.0f, BrickBrown);
-	drawBrick(18.0f, 33.0f, 20.0f, 9.0f, 4.0f, BrickRed);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    drawBrick(-40.0f, 4.0f, 30.0f, 13.0f, -4.0f, BrickBrown);
+    drawBrick(-8.0f, 3.0f, 32.0f, 13.0f, 5.0f, BrickRed);
+    drawBrick(26.0f, 5.0f, 28.0f, 12.0f, -8.0f, BrickOrange);
+    drawBrick(52.0f, 2.0f, 26.0f, 12.0f, 10.0f, BrickRed);
+    drawBrick(-22.0f, 18.0f, 28.0f, 12.0f, 6.0f, BrickRed);
+    drawBrick(6.0f, 20.0f, 26.0f, 12.0f, -5.0f, BrickBrown);
+    drawBrick(34.0f, 17.0f, 24.0f, 11.0f, 9.0f, BrickOrange);
+    drawBrick(-6.0f, 34.0f, 22.0f, 10.0f, -12.0f, BrickBrown);
+    drawBrick(18.0f, 33.0f, 20.0f, 9.0f, 4.0f, BrickRed);
+    glPopMatrix();
 }
+// [S2-OBJ-08] Wood Plank -> drawWoodPlank
 
 void drawWoodPlank(float x, float y, float length, float thickness,
-				   float rotation, Color3 color) {
-	float hl = length * 0.5f;
-	float ht = thickness * 0.5f;
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
-	glColor3f(color.r, color.g, color.b);
-	glBegin(GL_QUADS);
-	glVertex2f(-hl, -ht);
-	glVertex2f(hl, -ht);
-	glVertex2f(hl, ht);
-	glVertex2f(-hl, ht);
-	glEnd();
-	glPopMatrix();
+    float rotation, Color3 color) {
+    float hl = length * 0.5f;
+    float ht = thickness * 0.5f;
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_QUADS);
+    glVertex2f(-hl, -ht);
+    glVertex2f(hl, -ht);
+    glVertex2f(hl, ht);
+    glVertex2f(-hl, ht);
+    glEnd();
+    glPopMatrix();
 }
+// [S2-OBJ-09] Broken Beam -> drawBrokenBeam
 
 void drawBrokenBeam(float x, float y, float length, float thickness,
-					float rotation, Color3 color) {
-	float hl = length * 0.5f;
-	float ht = thickness * 0.5f;
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
-	glColor3f(color.r, color.g, color.b);
-	glBegin(GL_POLYGON);
-	glVertex2f(-hl, -ht);
-	glVertex2f(length * 0.25f, -ht);
-	glVertex2f(hl, 0.0f);
-	glVertex2f(length * 0.30f, ht);
-	glVertex2f(-hl, ht);
-	glEnd();
-	glPopMatrix();
+    float rotation, Color3 color) {
+    float hl = length * 0.5f;
+    float ht = thickness * 0.5f;
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_POLYGON);
+    glVertex2f(-hl, -ht);
+    glVertex2f(length * 0.25f, -ht);
+    glVertex2f(hl, 0.0f);
+    glVertex2f(length * 0.30f, ht);
+    glVertex2f(-hl, ht);
+    glEnd();
+    glPopMatrix();
 }
+// [S2-OBJ-10] Wood Debris Pile -> drawWoodDebrisPile
 
 void drawWoodDebrisPile(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	drawWoodPlank(0.0f, 4.0f, 70.0f, 10.0f, 12.0f, WoodBrown);
-	drawBrokenBeam(20.0f, 10.0f, 55.0f, 9.0f, -20.0f, BurntWood);
-	drawWoodPlank(-15.0f, 14.0f, 50.0f, 8.0f, 35.0f, WoodBrownLight);
-	drawBrokenBeam(10.0f, 20.0f, 45.0f, 8.0f, 100.0f, WoodBrown);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    drawWoodPlank(0.0f, 4.0f, 70.0f, 10.0f, 12.0f, WoodBrown);
+    drawBrokenBeam(20.0f, 10.0f, 55.0f, 9.0f, -20.0f, BurntWood);
+    drawWoodPlank(-15.0f, 14.0f, 50.0f, 8.0f, 35.0f, WoodBrownLight);
+    drawBrokenBeam(10.0f, 20.0f, 45.0f, 8.0f, 100.0f, WoodBrown);
+    glPopMatrix();
 }
+// [S2-OBJ-11] Broken Roof Piece -> drawBrokenRoofPiece
 
 void drawBrokenRoofPiece(float x, float y, float w, float h, float rotation,
-						 Color3 color) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glRotatef(rotation, 0.0f, 0.0f, 1.0f);
-	glColor3f(color.r, color.g, color.b);
-	glBegin(GL_QUADS);
-	glVertex2f(-w * 0.5f, -h * 0.5f);
-	glVertex2f(w * 0.5f, -h * 0.35f);
-	glVertex2f(w * 0.4f, h * 0.5f);
-	glVertex2f(-w * 0.45f, h * 0.4f);
-	glEnd();
-	glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
-	glBegin(GL_LINES);
-	glVertex2f(-w * 0.2f, -h * 0.4f);
-	glVertex2f(-w * 0.1f, h * 0.4f);
-	glVertex2f(w * 0.15f, -h * 0.4f);
-	glVertex2f(w * 0.2f, h * 0.4f);
-	glEnd();
-	glPopMatrix();
+    Color3 color) {
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    glColor3f(color.r, color.g, color.b);
+    glBegin(GL_QUADS);
+    glVertex2f(-w * 0.5f, -h * 0.5f);
+    glVertex2f(w * 0.5f, -h * 0.35f);
+    glVertex2f(w * 0.4f, h * 0.5f);
+    glVertex2f(-w * 0.45f, h * 0.4f);
+    glEnd();
+    glColor3f(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f);
+    glBegin(GL_LINES);
+    glVertex2f(-w * 0.2f, -h * 0.4f);
+    glVertex2f(-w * 0.1f, h * 0.4f);
+    glVertex2f(w * 0.15f, -h * 0.4f);
+    glVertex2f(w * 0.2f, h * 0.4f);
+    glEnd();
+    glPopMatrix();
 }
+// [S2-OBJ-12] Roof Debris -> drawRoofDebris
 
 void drawRoofDebris(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	drawBrokenRoofPiece(-10.0f, 6.0f, 55.0f, 30.0f, 8.0f, RoofDarkRed);
-	drawBrokenRoofPiece(28.0f, 4.0f, 40.0f, 24.0f, -15.0f, RoofGray);
-	drawBrokenRoofPiece(5.0f, 20.0f, 35.0f, 20.0f, 30.0f, BurntWood);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    drawBrokenRoofPiece(-10.0f, 6.0f, 55.0f, 30.0f, 8.0f, RoofDarkRed);
+    drawBrokenRoofPiece(28.0f, 4.0f, 40.0f, 24.0f, -15.0f, RoofGray);
+    drawBrokenRoofPiece(5.0f, 20.0f, 35.0f, 20.0f, 30.0f, BurntWood);
+    glPopMatrix();
 }
+// [S2-OBJ-13] Broken House 1 -> drawBrokenHouse1
 
 void drawBrokenHouse1(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	drawBrickPileLarge(-45.0f, 8.0f, 0.9f);
-	drawBrickPileSmall(55.0f, 6.0f, 0.8f);
-	drawBlob(10.0f, 5.0f, 30.0f * 0.7f, 14.0f * 0.7f, x, AshGray);
-	drawBrokenRoofPiece(30.0f, 90.0f, 150.0f, 75.0f, -25.0f, RoofDarkRed);
-	glColor3f(CharcoalLight.r, CharcoalLight.g, CharcoalLight.b);
-	drawRect(0.0f, 20.0f, 26.0f, 110.0f);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(0.0f, 110.0f);
-	glVertex2f(26.0f, 110.0f);
-	glVertex2f(14.0f, 128.0f);
-	glEnd();
-	drawBrokenBeam(15.0f, 15.0f, 95.0f, 10.0f, 12.0f, WoodBrown);
-	drawWoodPlank(-25.0f, 10.0f, 70.0f, 8.0f, -10.0f, BurntWood);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    drawBrickPileLarge(-45.0f, 8.0f, 0.9f);
+    drawBrickPileSmall(55.0f, 6.0f, 0.8f);
+    drawBlob(10.0f, 5.0f, 30.0f * 0.7f, 14.0f * 0.7f, x, AshGray);
+    drawBrokenRoofPiece(30.0f, 90.0f, 150.0f, 75.0f, -25.0f, RoofDarkRed);
+    glColor3f(CharcoalLight.r, CharcoalLight.g, CharcoalLight.b);
+    drawRect(0.0f, 20.0f, 26.0f, 110.0f);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(0.0f, 110.0f);
+    glVertex2f(26.0f, 110.0f);
+    glVertex2f(14.0f, 128.0f);
+    glEnd();
+    drawBrokenBeam(15.0f, 15.0f, 95.0f, 10.0f, 12.0f, WoodBrown);
+    drawWoodPlank(-25.0f, 10.0f, 70.0f, 8.0f, -10.0f, BurntWood);
+    glPopMatrix();
 }
+// [S2-OBJ-14] Ruined House Variant 1 -> NEW2drawHouse
 
 void NEW2drawHouse() {
-	glColor3ub(75, 60, 48);
-	glBegin(GL_POLYGON);
-	glVertex2f(-4.0f, -6.0f);
-	glVertex2f(-2.2f, -4.8f);
-	glVertex2f(0.5f, -5.0f);
-	glVertex2f(2.8f, -4.5f);
-	glVertex2f(4.2f, -6.0f);
-	glEnd();
+    glColor3ub(75, 60, 48);
+    glBegin(GL_POLYGON);
+    glVertex2f(-4.0f, -6.0f);
+    glVertex2f(-2.2f, -4.8f);
+    glVertex2f(0.5f, -5.0f);
+    glVertex2f(2.8f, -4.5f);
+    glVertex2f(4.2f, -6.0f);
+    glEnd();
 
-	glColor3ub(140, 90, 50);
-	glBegin(GL_POLYGON);
-	glVertex2f(-3.1f, -6.0f);
-	glVertex2f(-2.5f, -6.0f);
-	glVertex2f(-2.4f, -2.5f);
-	glVertex2f(-2.8f, -2.2f);
-	glVertex2f(-3.2f, -2.7f);
-	glEnd();
+    glColor3ub(140, 90, 50);
+    glBegin(GL_POLYGON);
+    glVertex2f(-3.1f, -6.0f);
+    glVertex2f(-2.5f, -6.0f);
+    glVertex2f(-2.4f, -2.5f);
+    glVertex2f(-2.8f, -2.2f);
+    glVertex2f(-3.2f, -2.7f);
+    glEnd();
 
-	glBegin(GL_POLYGON);
-	glVertex2f(2.0f, -6.0f);
-	glVertex2f(2.6f, -6.0f);
-	glVertex2f(3.5f, -3.2f);
-	glVertex2f(3.0f, -3.0f);
-	glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(2.0f, -6.0f);
+    glVertex2f(2.6f, -6.0f);
+    glVertex2f(3.5f, -3.2f);
+    glVertex2f(3.0f, -3.0f);
+    glEnd();
 
-	glBegin(GL_POLYGON);
-	glVertex2f(-0.4f, -6.0f);
-	glVertex2f(0.2f, -6.0f);
-	glVertex2f(0.4f, -4.2f);
-	glVertex2f(-0.2f, -4.0f);
-	glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.4f, -6.0f);
+    glVertex2f(0.2f, -6.0f);
+    glVertex2f(0.4f, -4.2f);
+    glVertex2f(-0.2f, -4.0f);
+    glEnd();
 
-	glColor3ub(115, 70, 35);
-	glBegin(GL_POLYGON);
-	glVertex2f(-3.2f, -2.4f);
-	glVertex2f(-0.8f, -3.5f);
-	glVertex2f(-0.7f, -3.9f);
-	glVertex2f(-3.1f, -2.8f);
-	glEnd();
+    glColor3ub(115, 70, 35);
+    glBegin(GL_POLYGON);
+    glVertex2f(-3.2f, -2.4f);
+    glVertex2f(-0.8f, -3.5f);
+    glVertex2f(-0.7f, -3.9f);
+    glVertex2f(-3.1f, -2.8f);
+    glEnd();
 
-	glBegin(GL_POLYGON);
-	glVertex2f(-0.2f, -3.8f);
-	glVertex2f(3.2f, -3.2f);
-	glVertex2f(3.1f, -3.6f);
-	glVertex2f(-0.3f, -4.2f);
-	glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.2f, -3.8f);
+    glVertex2f(3.2f, -3.2f);
+    glVertex2f(3.1f, -3.6f);
+    glVertex2f(-0.3f, -4.2f);
+    glEnd();
 
-	glColor3ub(140, 35, 35);
-	glBegin(GL_POLYGON);
-	glVertex2f(-3.6f, -1.8f);
-	glVertex2f(-1.5f, -3.0f);
-	glVertex2f(-1.8f, -3.4f);
-	glVertex2f(-3.8f, -2.1f);
-	glEnd();
+    glColor3ub(140, 35, 35);
+    glBegin(GL_POLYGON);
+    glVertex2f(-3.6f, -1.8f);
+    glVertex2f(-1.5f, -3.0f);
+    glVertex2f(-1.8f, -3.4f);
+    glVertex2f(-3.8f, -2.1f);
+    glEnd();
 
-	glBegin(GL_POLYGON);
-	glVertex2f(-0.8f, -2.8f);
-	glVertex2f(0.2f, -1.0f);
-	glVertex2f(0.8f, -2.5f);
-	glVertex2f(0.3f, -2.7f);
-	glVertex2f(-0.2f, -1.6f);
-	glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.8f, -2.8f);
+    glVertex2f(0.2f, -1.0f);
+    glVertex2f(0.8f, -2.5f);
+    glVertex2f(0.3f, -2.7f);
+    glVertex2f(-0.2f, -1.6f);
+    glEnd();
 
-	glBegin(GL_POLYGON);
-	glVertex2f(1.8f, -4.8f);
-	glVertex2f(3.3f, -4.2f);
-	glVertex2f(3.5f, -4.6f);
-	glVertex2f(2.0f, -5.2f);
-	glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(1.8f, -4.8f);
+    glVertex2f(3.3f, -4.2f);
+    glVertex2f(3.5f, -4.6f);
+    glVertex2f(2.0f, -5.2f);
+    glEnd();
 
-	glColor3ub(195, 190, 180);
-	glBegin(GL_POLYGON);
-	glVertex2f(-4.3f, -5.7f);
-	glVertex2f(-3.3f, -5.4f);
-	glVertex2f(-3.1f, -6.0f);
-	glVertex2f(-4.1f, -6.2f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(-2.2f, -3.8f);
-	glVertex2f(-1.4f, -3.6f);
-	glVertex2f(-1.2f, -4.1f);
-	glVertex2f(-2.0f, -4.3f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(-0.8f, -5.2f);
-	glVertex2f(-0.1f, -4.9f);
-	glVertex2f(0.2f, -5.5f);
-	glVertex2f(-0.5f, -5.7f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(1.5f, -3.6f);
-	glVertex2f(2.5f, -3.4f);
-	glVertex2f(2.7f, -4.0f);
-	glVertex2f(1.7f, -4.1f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(2.4f, -5.2f);
-	glVertex2f(3.6f, -4.8f);
-	glVertex2f(3.8f, -5.5f);
-	glVertex2f(2.6f, -5.8f);
-	glEnd();
+    glColor3ub(195, 190, 180);
+    glBegin(GL_POLYGON);
+    glVertex2f(-4.3f, -5.7f);
+    glVertex2f(-3.3f, -5.4f);
+    glVertex2f(-3.1f, -6.0f);
+    glVertex2f(-4.1f, -6.2f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-2.2f, -3.8f);
+    glVertex2f(-1.4f, -3.6f);
+    glVertex2f(-1.2f, -4.1f);
+    glVertex2f(-2.0f, -4.3f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.8f, -5.2f);
+    glVertex2f(-0.1f, -4.9f);
+    glVertex2f(0.2f, -5.5f);
+    glVertex2f(-0.5f, -5.7f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(1.5f, -3.6f);
+    glVertex2f(2.5f, -3.4f);
+    glVertex2f(2.7f, -4.0f);
+    glVertex2f(1.7f, -4.1f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(2.4f, -5.2f);
+    glVertex2f(3.6f, -4.8f);
+    glVertex2f(3.8f, -5.5f);
+    glVertex2f(2.6f, -5.8f);
+    glEnd();
 
-	glColor3ub(155, 150, 140);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-2.5f, -5.8f);
-	glVertex2f(-2.2f, -5.5f);
-	glVertex2f(-2.1f, -5.9f);
-	glVertex2f(0.8f, -5.8f);
-	glVertex2f(1.1f, -5.4f);
-	glVertex2f(1.3f, -5.9f);
-	glVertex2f(3.8f, -5.8f);
-	glVertex2f(4.1f, -5.5f);
-	glVertex2f(4.2f, -6.1f);
-	glEnd();
+    glColor3ub(155, 150, 140);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-2.5f, -5.8f);
+    glVertex2f(-2.2f, -5.5f);
+    glVertex2f(-2.1f, -5.9f);
+    glVertex2f(0.8f, -5.8f);
+    glVertex2f(1.1f, -5.4f);
+    glVertex2f(1.3f, -5.9f);
+    glVertex2f(3.8f, -5.8f);
+    glVertex2f(4.1f, -5.5f);
+    glVertex2f(4.2f, -6.1f);
+    glEnd();
 }
+// [S2-OBJ-15] Ruined House Variant 2 -> NEW1drawHouseBlack
 
 void NEW1drawHouseBlack() {
-	glColor3ub(55, 55, 62);
-	glBegin(GL_POLYGON);
-	glVertex2f(-3.0f, -1.6f);
-	glVertex2f(-2.1f, -1.9f);
-	glVertex2f(-1.9f, -2.8f);
-	glVertex2f(-2.8f, -2.7f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(0.9f, -1.5f);
-	glVertex2f(1.5f, -1.8f);
-	glVertex2f(1.3f, -2.8f);
-	glVertex2f(0.7f, -2.6f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(1.6f, -2.2f);
-	glVertex2f(2.3f, -2.1f);
-	glVertex2f(2.1f, -3.3f);
-	glVertex2f(1.4f, -3.1f);
-	glEnd();
+    glColor3ub(55, 55, 62);
+    glBegin(GL_POLYGON);
+    glVertex2f(-3.0f, -1.6f);
+    glVertex2f(-2.1f, -1.9f);
+    glVertex2f(-1.9f, -2.8f);
+    glVertex2f(-2.8f, -2.7f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(0.9f, -1.5f);
+    glVertex2f(1.5f, -1.8f);
+    glVertex2f(1.3f, -2.8f);
+    glVertex2f(0.7f, -2.6f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(1.6f, -2.2f);
+    glVertex2f(2.3f, -2.1f);
+    glVertex2f(2.1f, -3.3f);
+    glVertex2f(1.4f, -3.1f);
+    glEnd();
 
-	glColor3ub(40, 38, 48);
-	glBegin(GL_POLYGON);
-	glVertex2f(-1.7f, -4.8f);
-	glVertex2f(1.7f, -4.8f);
-	glVertex2f(1.6f, -3.0f);
-	glVertex2f(0.1f, -3.4f);
-	glVertex2f(-1.6f, -3.1f);
-	glEnd();
+    glColor3ub(40, 38, 48);
+    glBegin(GL_POLYGON);
+    glVertex2f(-1.7f, -4.8f);
+    glVertex2f(1.7f, -4.8f);
+    glVertex2f(1.6f, -3.0f);
+    glVertex2f(0.1f, -3.4f);
+    glVertex2f(-1.6f, -3.1f);
+    glEnd();
 
-	glLineWidth(2.5f);
-	glColor3ub(15, 12, 20);
-	glBegin(GL_LINES);
-	glVertex2f(-1.1f, -3.1f);
-	glVertex2f(-0.8f, -4.0f);
-	glVertex2f(0.8f, -3.2f);
-	glVertex2f(1.2f, -4.2f);
-	glEnd();
+    glLineWidth(2.5f);
+    glColor3ub(15, 12, 20);
+    glBegin(GL_LINES);
+    glVertex2f(-1.1f, -3.1f);
+    glVertex2f(-0.8f, -4.0f);
+    glVertex2f(0.8f, -3.2f);
+    glVertex2f(1.2f, -4.2f);
+    glEnd();
 
-	glColor3ub(75, 60, 48);
-	glBegin(GL_POLYGON);
-	glVertex2f(-0.3f, -1.3f);
-	glVertex2f(0.1f, -1.1f);
-	glVertex2f(0.2f, -2.4f);
-	glVertex2f(-0.2f, -2.5f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(-2.4f, -2.3f);
-	glVertex2f(-0.5f, -2.0f);
-	glVertex2f(-0.6f, -2.3f);
-	glVertex2f(-2.5f, -2.6f);
-	glEnd();
+    glColor3ub(75, 60, 48);
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.3f, -1.3f);
+    glVertex2f(0.1f, -1.1f);
+    glVertex2f(0.2f, -2.4f);
+    glVertex2f(-0.2f, -2.5f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-2.4f, -2.3f);
+    glVertex2f(-0.5f, -2.0f);
+    glVertex2f(-0.6f, -2.3f);
+    glVertex2f(-2.5f, -2.6f);
+    glEnd();
 
-	glColor3ub(22, 20, 28);
-	glBegin(GL_POLYGON);
-	glVertex2f(-0.2f, -1.5f);
-	glVertex2f(-3.7f, -3.7f);
-	glVertex2f(-3.3f, -4.1f);
-	glVertex2f(-0.4f, -2.3f);
-	glEnd();
+    glColor3ub(22, 20, 28);
+    glBegin(GL_POLYGON);
+    glVertex2f(-0.2f, -1.5f);
+    glVertex2f(-3.7f, -3.7f);
+    glVertex2f(-3.3f, -4.1f);
+    glVertex2f(-0.4f, -2.3f);
+    glEnd();
 
-	glColor3ub(18, 16, 24);
-	glBegin(GL_POLYGON);
-	glVertex2f(0.3f, -1.8f);
-	glVertex2f(3.7f, -3.9f);
-	glVertex2f(3.3f, -4.3f);
-	glVertex2f(0.1f, -2.6f);
-	glEnd();
+    glColor3ub(18, 16, 24);
+    glBegin(GL_POLYGON);
+    glVertex2f(0.3f, -1.8f);
+    glVertex2f(3.7f, -3.9f);
+    glVertex2f(3.3f, -4.3f);
+    glVertex2f(0.1f, -2.6f);
+    glEnd();
 
-	glColor3ub(140, 175, 200);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-0.9f, -3.1f);
-	glVertex2f(-0.5f, -3.1f);
-	glVertex2f(-0.8f, -2.6f);
-	glVertex2f(-0.3f, -3.0f);
-	glVertex2f(-0.2f, -2.5f);
-	glVertex2f(-0.4f, -2.7f);
-	glVertex2f(0.2f, -3.1f);
-	glVertex2f(0.7f, -3.1f);
-	glVertex2f(0.3f, -2.4f);
-	glEnd();
+    glColor3ub(140, 175, 200);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-0.9f, -3.1f);
+    glVertex2f(-0.5f, -3.1f);
+    glVertex2f(-0.8f, -2.6f);
+    glVertex2f(-0.3f, -3.0f);
+    glVertex2f(-0.2f, -2.5f);
+    glVertex2f(-0.4f, -2.7f);
+    glVertex2f(0.2f, -3.1f);
+    glVertex2f(0.7f, -3.1f);
+    glVertex2f(0.3f, -2.4f);
+    glEnd();
 
-	glColor3ub(30, 28, 36);
-	glBegin(GL_POLYGON);
-	glVertex2f(-5.3f, -4.2f);
-	glVertex2f(-5.0f, -3.5f);
-	glVertex2f(-3.0f, -3.0f);
-	glVertex2f(-3.1f, -3.5f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(-3.2f, -3.1f);
-	glVertex2f(-1.5f, -2.4f);
-	glVertex2f(-1.7f, -3.0f);
-	glVertex2f(-3.3f, -3.6f);
-	glEnd();
+    glColor3ub(30, 28, 36);
+    glBegin(GL_POLYGON);
+    glVertex2f(-5.3f, -4.2f);
+    glVertex2f(-5.0f, -3.5f);
+    glVertex2f(-3.0f, -3.0f);
+    glVertex2f(-3.1f, -3.5f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-3.2f, -3.1f);
+    glVertex2f(-1.5f, -2.4f);
+    glVertex2f(-1.7f, -3.0f);
+    glVertex2f(-3.3f, -3.6f);
+    glEnd();
 
-	glColor3ub(50, 48, 56);
-	glBegin(GL_POLYGON);
-	glVertex2f(-4.6f, -4.7f);
-	glVertex2f(-0.5f, -5.1f);
-	glVertex2f(-0.3f, -5.6f);
-	glVertex2f(-4.4f, -5.2f);
-	glEnd();
+    glColor3ub(50, 48, 56);
+    glBegin(GL_POLYGON);
+    glVertex2f(-4.6f, -4.7f);
+    glVertex2f(-0.5f, -5.1f);
+    glVertex2f(-0.3f, -5.6f);
+    glVertex2f(-4.4f, -5.2f);
+    glEnd();
 
-	glColor3ub(30, 28, 36);
-	glBegin(GL_POLYGON);
-	glVertex2f(1.2f, -2.4f);
-	glVertex2f(4.3f, -3.6f);
-	glVertex2f(4.0f, -4.2f);
-	glVertex2f(1.0f, -2.8f);
-	glEnd();
+    glColor3ub(30, 28, 36);
+    glBegin(GL_POLYGON);
+    glVertex2f(1.2f, -2.4f);
+    glVertex2f(4.3f, -3.6f);
+    glVertex2f(4.0f, -4.2f);
+    glVertex2f(1.0f, -2.8f);
+    glEnd();
 
-	glColor3ub(35, 35, 40);
-	glBegin(GL_POLYGON);
-	glVertex2f(-4.2f, -5.3f);
-	glVertex2f(-2.7f, -5.4f);
-	glVertex2f(-2.8f, -5.9f);
-	glVertex2f(-4.2f, -5.8f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(-2.3f, -5.4f);
-	glVertex2f(-1.1f, -5.3f);
-	glVertex2f(-1.2f, -5.9f);
-	glVertex2f(-2.4f, -5.9f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(1.8f, -5.4f);
-	glVertex2f(3.2f, -5.3f);
-	glVertex2f(3.1f, -5.9f);
-	glVertex2f(1.7f, -5.9f);
-	glEnd();
+    glColor3ub(35, 35, 40);
+    glBegin(GL_POLYGON);
+    glVertex2f(-4.2f, -5.3f);
+    glVertex2f(-2.7f, -5.4f);
+    glVertex2f(-2.8f, -5.9f);
+    glVertex2f(-4.2f, -5.8f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(-2.3f, -5.4f);
+    glVertex2f(-1.1f, -5.3f);
+    glVertex2f(-1.2f, -5.9f);
+    glVertex2f(-2.4f, -5.9f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(1.8f, -5.4f);
+    glVertex2f(3.2f, -5.3f);
+    glVertex2f(3.1f, -5.9f);
+    glVertex2f(1.7f, -5.9f);
+    glEnd();
 
-	glColor3ub(45, 42, 50);
-	glBegin(GL_POLYGON);
-	glVertex2f(2.3f, -4.5f);
-	glVertex2f(3.7f, -4.4f);
-	glVertex2f(3.9f, -5.1f);
-	glVertex2f(2.4f, -5.3f);
-	glEnd();
+    glColor3ub(45, 42, 50);
+    glBegin(GL_POLYGON);
+    glVertex2f(2.3f, -4.5f);
+    glVertex2f(3.7f, -4.4f);
+    glVertex2f(3.9f, -5.1f);
+    glVertex2f(2.4f, -5.3f);
+    glEnd();
 
-	glColor3ub(230, 230, 225);
-	glBegin(GL_POLYGON);
-	glVertex2f(3.9f, -3.0f);
-	glVertex2f(5.1f, -2.9f);
-	glVertex2f(5.0f, -3.3f);
-	glVertex2f(3.8f, -3.2f);
-	glEnd();
-	glBegin(GL_POLYGON);
-	glVertex2f(4.1f, -3.7f);
-	glVertex2f(5.3f, -4.0f);
-	glVertex2f(5.1f, -4.3f);
-	glVertex2f(4.0f, -4.0f);
-	glEnd();
+    glColor3ub(230, 230, 225);
+    glBegin(GL_POLYGON);
+    glVertex2f(3.9f, -3.0f);
+    glVertex2f(5.1f, -2.9f);
+    glVertex2f(5.0f, -3.3f);
+    glVertex2f(3.8f, -3.2f);
+    glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(4.1f, -3.7f);
+    glVertex2f(5.3f, -4.0f);
+    glVertex2f(5.1f, -4.3f);
+    glVertex2f(4.0f, -4.0f);
+    glEnd();
 
-	glColor3ub(180, 180, 175);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-4.8f, -5.6f);
-	glVertex2f(-4.5f, -5.3f);
-	glVertex2f(-4.4f, -5.7f);
-	glVertex2f(-0.2f, -5.8f);
-	glVertex2f(0.1f, -5.4f);
-	glVertex2f(0.3f, -5.9f);
-	glVertex2f(3.5f, -5.7f);
-	glVertex2f(3.8f, -5.3f);
-	glVertex2f(4.0f, -5.8f);
-	glEnd();
+    glColor3ub(180, 180, 175);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-4.8f, -5.6f);
+    glVertex2f(-4.5f, -5.3f);
+    glVertex2f(-4.4f, -5.7f);
+    glVertex2f(-0.2f, -5.8f);
+    glVertex2f(0.1f, -5.4f);
+    glVertex2f(0.3f, -5.9f);
+    glVertex2f(3.5f, -5.7f);
+    glVertex2f(3.8f, -5.3f);
+    glVertex2f(4.0f, -5.8f);
+    glEnd();
 }
+// [S2-OBJ-16] Ruined House -> drawRuinedHouseNEW
 
 void drawRuinedHouseNEW(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	glTranslatef(0.0f, 6.0f, 0.0f);
-	NEW2drawHouse();
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    glTranslatef(0.0f, 6.0f, 0.0f);
+    NEW2drawHouse();
+    glPopMatrix();
 }
+// [S2-OBJ-17] Black Ruined House -> drawRuinedHouseBlackNEW
 
 void drawRuinedHouseBlackNEW(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	glTranslatef(0.0f, 5.9f, 0.0f);
-	NEW1drawHouseBlack();
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    glTranslatef(0.0f, 5.9f, 0.0f);
+    NEW1drawHouseBlack();
+    glPopMatrix();
 }
+// [S2-OBJ-18] Burnt Tree 1 -> drawBurntTree1
 
 void drawBurntTree1(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	glColor3f(BurntWood.r * 0.6f, BurntWood.g * 0.6f, BurntWood.b * 0.6f);
-	drawRect(-7.0f, 0.0f, 7.0f, 130.0f);
-	glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
-	glLineWidth(3.0f);
-	glBegin(GL_LINES);
-	glVertex2f(0.0f, 100.0f);
-	glVertex2f(-35.0f, 130.0f);
-	glVertex2f(0.0f, 90.0f);
-	glVertex2f(30.0f, 115.0f);
-	glVertex2f(0.0f, 70.0f);
-	glVertex2f(-28.0f, 95.0f);
-	glVertex2f(0.0f, 55.0f);
-	glVertex2f(22.0f, 75.0f);
-	glVertex2f(0.0f, 130.0f);
-	glVertex2f(8.0f, 150.0f);
-	glEnd();
-	glColor3f(0.10f, 0.14f, 0.06f);
-	drawTriangle(-18.0f, 10.0f, 0.0f, 10.0f, 0.0f, 35.0f);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    glColor3f(BurntWood.r * 0.6f, BurntWood.g * 0.6f, BurntWood.b * 0.6f);
+    drawRect(-7.0f, 0.0f, 7.0f, 130.0f);
+    glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, 100.0f);
+    glVertex2f(-35.0f, 130.0f);
+    glVertex2f(0.0f, 90.0f);
+    glVertex2f(30.0f, 115.0f);
+    glVertex2f(0.0f, 70.0f);
+    glVertex2f(-28.0f, 95.0f);
+    glVertex2f(0.0f, 55.0f);
+    glVertex2f(22.0f, 75.0f);
+    glVertex2f(0.0f, 130.0f);
+    glVertex2f(8.0f, 150.0f);
+    glEnd();
+    glColor3f(0.10f, 0.14f, 0.06f);
+    drawTriangle(-18.0f, 10.0f, 0.0f, 10.0f, 0.0f, 35.0f);
+    glPopMatrix();
 }
+// [S2-OBJ-19] Burnt Tree 2 -> drawBurntTree2
 
 void drawBurntTree2(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	glColor3f(0.20f, 0.13f, 0.08f);
-	drawRect(-9.0f, 0.0f, 9.0f, 60.0f);
-	glColor3f(0.16f, 0.28f, 0.10f);
-	drawTriangle(-45.0f, 40.0f, 0.0f, 40.0f, 0.0f, 95.0f);
-	glColor3f(0.34f, 0.26f, 0.12f);
-	drawTriangle(0.0f, 40.0f, 40.0f, 40.0f, 0.0f, 90.0f);
-	glColor3f(0.14f, 0.22f, 0.09f);
-	drawTriangle(-30.0f, 80.0f, 0.0f, 80.0f, 0.0f, 125.0f);
-	glColor3f(0.18f, 0.12f, 0.08f);
-	drawRect(-6.0f, 100.0f, 6.0f, 140.0f);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(-6.0f, 140.0f);
-	glVertex2f(6.0f, 140.0f);
-	glVertex2f(14.0f, 150.0f);
-	glEnd();
-	glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	glVertex2f(0.0f, 110.0f);
-	glVertex2f(-25.0f, 130.0f);
-	glEnd();
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    glColor3f(0.20f, 0.13f, 0.08f);
+    drawRect(-9.0f, 0.0f, 9.0f, 60.0f);
+    glColor3f(0.16f, 0.28f, 0.10f);
+    drawTriangle(-45.0f, 40.0f, 0.0f, 40.0f, 0.0f, 95.0f);
+    glColor3f(0.34f, 0.26f, 0.12f);
+    drawTriangle(0.0f, 40.0f, 40.0f, 40.0f, 0.0f, 90.0f);
+    glColor3f(0.14f, 0.22f, 0.09f);
+    drawTriangle(-30.0f, 80.0f, 0.0f, 80.0f, 0.0f, 125.0f);
+    glColor3f(0.18f, 0.12f, 0.08f);
+    drawRect(-6.0f, 100.0f, 6.0f, 140.0f);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(-6.0f, 140.0f);
+    glVertex2f(6.0f, 140.0f);
+    glVertex2f(14.0f, 150.0f);
+    glEnd();
+    glColor3f(BurntBlack.r, BurntBlack.g, BurntBlack.b);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, 110.0f);
+    glVertex2f(-25.0f, 130.0f);
+    glEnd();
+    glPopMatrix();
 }
+// [S2-OBJ-20] Fire -> drawFire
 
 void drawFire(float x, float y, float scale) {
-	if (rainMode)
-		return;
+    if (rainMode)
+        return;
 
-	float flick = 0.9f + ((rand() % 20) / 100.0f);
+    float flick = 0.9f + ((rand() % 20) / 100.0f);
 
-	float flick2 = 0.9f + ((rand() % 20) /
-						   100.0f); // generates random value then makes it 0.19
+    float flick2 = 0.9f + ((rand() % 20) /
+        100.0f); // generates random value then makes it 0.19
 
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
-	glColor3f(EmberRed.r, EmberRed.g, EmberRed.b);
-	drawTriangle(-16.0f, 0.0f, 16.0f, 0.0f, 0.0f, 55.0f * flick);
-	drawTriangle(-10.0f, 0.0f, 6.0f, 0.0f, -4.0f,
-				 40.0f * flick2); // multiples the height
-	glColor3f(EmberOrange.r, EmberOrange.g, EmberOrange.b);
-	drawTriangle(-10.0f, 0.0f, 10.0f, 0.0f, 0.0f, 40.0f * flick2);
-	glColor3f(EmberYellow.r, EmberYellow.g, EmberYellow.b);
-	drawTriangle(-5.0f, 0.0f, 5.0f, 0.0f, 0.0f, 24.0f * flick);
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
+    glColor3f(EmberRed.r, EmberRed.g, EmberRed.b);
+    drawTriangle(-16.0f, 0.0f, 16.0f, 0.0f, 0.0f, 55.0f * flick);
+    drawTriangle(-10.0f, 0.0f, 6.0f, 0.0f, -4.0f,
+        40.0f * flick2); // multiples the height
+    glColor3f(EmberOrange.r, EmberOrange.g, EmberOrange.b);
+    drawTriangle(-10.0f, 0.0f, 10.0f, 0.0f, 0.0f, 40.0f * flick2);
+    glColor3f(EmberYellow.r, EmberYellow.g, EmberYellow.b);
+    drawTriangle(-5.0f, 0.0f, 5.0f, 0.0f, 0.0f, 24.0f * flick);
+    glPopMatrix();
 }
+// [S2-OBJ-21] Smoke -> drawSmoke
 void drawSmoke(float x, float y, float scale) {
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(0.35f, 0.35f, 0.35f, 0.25f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(0.35f, 0.35f, 0.35f, 0.25f);
 
-	drawCircle(x, y + (10.0f * scale), 9.0f * scale, 12);
+    drawCircle(x, y + (10.0f * scale), 9.0f * scale, 12);
 
-	float midX = x + (windForce * 2.0f);
-	float midY = y + smokeOffset + (28.0f * scale);
-	drawCircle(midX, midY, 14.0f * scale, 12); // Center
-	drawCircle(midX - (10.0f * scale), midY + (2.0f * scale), 11.0f * scale,
-			   12); // left
-	drawCircle(midX + (10.0f * scale), midY + (2.0f * scale), 11.0f * scale,
-			   12);
+    float midX = x + (windForce * 2.0f);
+    float midY = y + smokeOffset + (28.0f * scale);
+    drawCircle(midX, midY, 14.0f * scale, 12); // Center
+    drawCircle(midX - (10.0f * scale), midY + (2.0f * scale), 11.0f * scale,
+        12); // left
+    drawCircle(midX + (10.0f * scale), midY + (2.0f * scale), 11.0f * scale,
+        12);
 
-	float topX = x + (windForce * 4.0f);
-	float topY = y + (smokeOffset * 1.5f) + (50.0f * scale);
-	drawCircle(topX, topY, 18.0f * scale, 12); // Center
-	drawCircle(topX - (13.0f * scale), topY + (3.0f * scale), 14.0f * scale,
-			   12); // right
-	drawCircle(topX + (13.0f * scale), topY + (3.0f * scale), 14.0f * scale,
-			   12);
+    float topX = x + (windForce * 4.0f);
+    float topY = y + (smokeOffset * 1.5f) + (50.0f * scale);
+    drawCircle(topX, topY, 18.0f * scale, 12); // Center
+    drawCircle(topX - (13.0f * scale), topY + (3.0f * scale), 14.0f * scale,
+        12); // right
+    drawCircle(topX + (13.0f * scale), topY + (3.0f * scale), 14.0f * scale,
+        12);
 
-	glDisable(GL_BLEND);
+    glDisable(GL_BLEND);
 }
+// [S2-OBJ-22] Disaster Ground -> drawScene2Ground
 
 void drawScene2Ground() {
-	glColor3f(DustyGreen.r, DustyGreen.g, DustyGreen.b);
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 0.0f);
-	glVertex2f(WIN_W, 0.0f);
-	glVertex2f(WIN_W, WIN_H * 0.33f);
-	glVertex2f(0.0f, WIN_H * 0.33f);
-	glEnd();
+    glColor3f(DustyGreen.r, DustyGreen.g, DustyGreen.b);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 0.0f);
+    glVertex2f(WIN_W, 0.0f);
+    glVertex2f(WIN_W, WIN_H * 0.33f);
+    glVertex2f(0.0f, WIN_H * 0.33f);
+    glEnd();
 
-	glColor3f(DirtBrown.r, DirtBrown.g, DirtBrown.b);
-	glBegin(GL_QUAD_STRIP);
-	glVertex2f(0.0f, 55.0f);
-	glVertex2f(0.0f, 105.0f);
-	glVertex2f(300.0f, 65.0f);
-	glVertex2f(300.0f, 120.0f);
-	glVertex2f(650.0f, 50.0f);
-	glVertex2f(650.0f, 100.0f);
-	glVertex2f(1000.0f, 70.0f);
-	glVertex2f(1000.0f, 125.0f);
-	glVertex2f(1350.0f, 55.0f);
-	glVertex2f(1350.0f, 105.0f);
-	glVertex2f((float)WIN_W, 60.0f);
-	glVertex2f((float)WIN_W, 110.0f);
-	glEnd();
+    glColor3f(DirtBrown.r, DirtBrown.g, DirtBrown.b);
+    glBegin(GL_QUAD_STRIP);
+    glVertex2f(0.0f, 55.0f);
+    glVertex2f(0.0f, 105.0f);
+    glVertex2f(300.0f, 65.0f);
+    glVertex2f(300.0f, 120.0f);
+    glVertex2f(650.0f, 50.0f);
+    glVertex2f(650.0f, 100.0f);
+    glVertex2f(1000.0f, 70.0f);
+    glVertex2f(1000.0f, 125.0f);
+    glVertex2f(1350.0f, 55.0f);
+    glVertex2f(1350.0f, 105.0f);
+    glVertex2f((float)WIN_W, 60.0f);
+    glVertex2f((float)WIN_W, 110.0f);
+    glEnd();
 
-	glColor3f(DirtBrown.r * 0.85f, DirtBrown.g * 0.85f, DirtBrown.b * 0.85f);
-	drawCircle(180.0f, 200.0f, 55.0f, 20);
-	drawCircle(980.0f, 230.0f, 70.0f, 20);
-	drawCircle(1400.0f, 170.0f, 45.0f, 20);
+    glColor3f(DirtBrown.r * 0.85f, DirtBrown.g * 0.85f, DirtBrown.b * 0.85f);
+    drawCircle(180.0f, 200.0f, 55.0f, 20);
+    drawCircle(980.0f, 230.0f, 70.0f, 20);
+    drawCircle(1400.0f, 170.0f, 45.0f, 20);
 }
 
 bool isNear(float x1, float y1, float x2, float y2) {
-	//  click within 30 horizontally and vertically or Not
-	if (x1 >= x2 - 30.0f && x1 <= x2 + 30.0f) {
-		if (y1 >= y2 - 30.0f && y1 <= y2 + 30.0f) {
-			return true;
-		}
-	}
-	return false;
+    //  click within 30 horizontally and vertically or Not
+    if (x1 >= x2 - 30.0f && x1 <= x2 + 30.0f) {
+        if (y1 >= y2 - 30.0f && y1 <= y2 + 30.0f) {
+            return true;
+        }
+    }
+    return false;
 }
 
 //------------------------- Main Scene 2 Construction -------------------------
 void scene2() {
-	if (!isNightMode && !rainMode) {
-		glPushMatrix();
-		glTranslatef(550.0f, 250.0f, 0.0f);
-		sun();
-		glPopMatrix();
-	}
+    if (!isNightMode && !rainMode) {
+        glPushMatrix();
+        glTranslatef(550.0f, 250.0f, 0.0f);
+        sun();
+        glPopMatrix();
+    }
 
-	drawClouds();
-	drawMountains();
-	drawHills();
+    drawClouds();
+    drawMountains();
+    drawHills();
 
-	drawScene2Ground();
+    drawScene2Ground();
 
-	drawCraterSmall(280.0f, 45.0f, 1.0f);
-	drawCraterSmall(1120.0f, 100.0f, 0.9f);
-	drawCraterSmall(560.0f, 110.0f, 1.0f);
-	drawCraterSmall(1500.0f, 60.0f, 1.0f);
-	drawCraterSmall(120.0f, 55.0f, 2.0f);
-	drawCraterSmall(850.0f, 30.0f, 0.8f);
+    drawCraterSmall(280.0f, 45.0f, 1.0f);
+    drawCraterSmall(1120.0f, 100.0f, 0.9f);
+    drawCraterSmall(560.0f, 110.0f, 1.0f);
+    drawCraterSmall(1500.0f, 60.0f, 1.0f);
+    drawCraterSmall(120.0f, 55.0f, 2.0f);
+    drawCraterSmall(850.0f, 30.0f, 0.8f);
 
-	drawRuinedHouseBlackNEW(120.0f, 222.0f, 11.55f);
-	drawBrokenHouse1(430.0f, 218.0f, 0.45f);
-	drawRuinedHouseBlackNEW(760.0f, 216.0f, 0.50f);
-	drawBrokenHouse1(1080.0f, 214.0f, 0.42f);
-	drawRuinedHouseBlackNEW(1380.0f, 212.0f, 11.55f);
+    drawRuinedHouseBlackNEW(120.0f, 222.0f, 11.55f);
+    drawBrokenHouse1(430.0f, 218.0f, 0.45f);
+    drawRuinedHouseBlackNEW(760.0f, 216.0f, 0.50f);
+    drawBrokenHouse1(1080.0f, 214.0f, 0.42f);
+    drawRuinedHouseBlackNEW(1380.0f, 212.0f, 11.55f);
 
-	drawBurntTree2(200.0f, 280.0f, 0.55f);
-	drawBurntTree1(500.0f, 278.0f, 0.5f);
-	drawRuinedHouseNEW(860.0f, 280.0f, 8.5f);
-	drawBurntTree2(1180.0f, 278.0f, 0.55f);
-	drawBurntTree1(1420.0f, 280.0f, 0.5f);
+    drawBurntTree2(200.0f, 280.0f, 0.55f);
+    drawBurntTree1(500.0f, 278.0f, 0.5f);
+    drawRuinedHouseNEW(860.0f, 280.0f, 8.5f);
+    drawBurntTree2(1180.0f, 278.0f, 0.55f);
+    drawBurntTree1(1420.0f, 280.0f, 0.5f);
 
-	drawRuinedHouseNEW(260.0f, 175.0f, 12.7f);
-	drawRuinedHouseBlackNEW(680.0f, 275.0f, 9.0f);
-	drawRuinedHouseNEW(380.0f, 275.0f, 9.0f);
-	drawRuinedHouseNEW(520.0f, 155.0f, 18.0f);
-	drawBrokenHouse1(680.0f, 165.0f, 0.75f);
-	drawRuinedHouseBlackNEW(1020.0f, 170.0f, 11.65f);
-	drawRuinedHouseNEW(1330.0f, 160.0f, 15.7f);
+    drawRuinedHouseNEW(260.0f, 175.0f, 12.7f);
+    drawRuinedHouseBlackNEW(680.0f, 275.0f, 9.0f);
+    drawRuinedHouseNEW(380.0f, 275.0f, 9.0f);
+    drawRuinedHouseNEW(520.0f, 155.0f, 18.0f);
+    drawBrokenHouse1(680.0f, 165.0f, 0.75f);
+    drawRuinedHouseBlackNEW(1020.0f, 170.0f, 11.65f);
+    drawRuinedHouseNEW(1330.0f, 160.0f, 15.7f);
 
-	drawBrickPileLarge(500.0f, 40.0f, 1.0f);
-	drawBrickPileSmall(870.0f, 35.0f, 1.0f);
-	drawBrickPileSmall(1180.0f, 50.0f, 0.9f);
-	drawBrick(340.0f, 30.0f, 26.0f, 12.0f, 18.0f, BrickRed);
-	drawBrick(760.0f, 25.0f, 22.0f, 10.0f, -10.0f, BrickBrown);
+    drawBrickPileLarge(500.0f, 40.0f, 1.0f);
+    drawBrickPileSmall(870.0f, 35.0f, 1.0f);
+    drawBrickPileSmall(1180.0f, 50.0f, 0.9f);
+    drawBrick(340.0f, 30.0f, 26.0f, 12.0f, 18.0f, BrickRed);
+    drawBrick(760.0f, 25.0f, 22.0f, 10.0f, -10.0f, BrickBrown);
 
-	drawWoodDebrisPile(230.0f, 40.0f, 1.0f);
-	drawWoodDebrisPile(1050.0f, 35.0f, 0.9f);
-	drawWoodPlank(620.0f, 30.0f, 90.0f, 12.0f, 15.0f, WoodBrown);
-	drawBrokenBeam(1350.0f, 28.0f, 80.0f, 11.0f, -25.0f, BurntWood);
-	drawRoofDebris(390.0f, 40.0f, 1.0f);
-	drawRoofDebris(1180.0f, 45.0f, 0.9f);
+    drawWoodDebrisPile(230.0f, 40.0f, 1.0f);
+    drawWoodDebrisPile(1050.0f, 35.0f, 0.9f);
+    drawWoodPlank(620.0f, 30.0f, 90.0f, 12.0f, 15.0f, WoodBrown);
+    drawBrokenBeam(1350.0f, 28.0f, 80.0f, 11.0f, -25.0f, BurntWood);
+    drawRoofDebris(390.0f, 40.0f, 1.0f);
+    drawRoofDebris(1180.0f, 45.0f, 0.9f);
 
-	drawRuinedHouseBlackNEW(820.0f, 115.0f, 20.0f);
+    drawRuinedHouseBlackNEW(820.0f, 115.0f, 20.0f);
 
-	drawBurntTree1(60.0f, 90.0f, 1.1f);
-	drawBurntTree2(1250.0f, 90.0f, 1.1f);
+    drawBurntTree1(60.0f, 90.0f, 1.1f);
+    drawBurntTree2(1250.0f, 90.0f, 1.1f);
 
-	drawFire(760.0f, 95.0f, 1.0f);
-	drawFire(650.0f, 150.0f, 0.7f);
-	drawFire(1380.0f, 212.0f, 0.5f);
-	drawFire(500.0f, 155.0f, 0.7f);
-	drawFire(380.0f, 275.0f, 0.4f);
+    drawFire(760.0f, 95.0f, 1.0f);
+    drawFire(650.0f, 150.0f, 0.7f);
+    drawFire(1380.0f, 212.0f, 0.5f);
+    drawFire(500.0f, 155.0f, 0.7f);
+    drawFire(380.0f, 275.0f, 0.4f);
 
-	drawSmoke(760.0f, 95.0f, 1.0f);
-	drawSmoke(650.0f, 150.0f, 0.7f);
-	drawSmoke(1380.0f, 212.0f, 0.5f);
-	drawSmoke(500.0f, 155.0f, 0.7f);
-	drawSmoke(380.0f, 275.0f, 0.4f);
+    drawSmoke(760.0f, 95.0f, 1.0f);
+    drawSmoke(650.0f, 150.0f, 0.7f);
+    drawSmoke(1380.0f, 212.0f, 0.5f);
+    drawSmoke(500.0f, 155.0f, 0.7f);
+    drawSmoke(380.0f, 275.0f, 0.4f);
 
-	drawSmoke(860.0f, 280.0f, 0.5f);
-	drawSmoke(760.0f, 216.0f, 0.50f);
-	drawSmoke(1020.0f, 170.0f, 0.65f);
-	drawSmoke(520.0f, 155.0f, 0.9f);
-	drawSmoke(120.0f, 222.0f, 0.95f);
+    drawSmoke(860.0f, 280.0f, 0.5f);
+    drawSmoke(760.0f, 216.0f, 0.50f);
+    drawSmoke(1020.0f, 170.0f, 0.65f);
+    drawSmoke(520.0f, 155.0f, 0.9f);
+    drawSmoke(120.0f, 222.0f, 0.95f);
 
-	for (int i = 0; i < fireCount; i++) {
-		drawFire(userFireX[i], userFireY[i], 0.8f);
-		drawSmoke(userFireX[i], userFireY[i] + 30.0f, 0.8f);
-	}
+    for (int i = 0; i < fireCount; i++) {
+        drawFire(userFireX[i], userFireY[i], 0.8f);
+        drawSmoke(userFireX[i], userFireY[i] + 30.0f, 0.8f);
+    }
 
-	for (int i = 0; i < debrisCount; i++) {
-		drawBrickPileSmall(debrisX[i], debrisY[i], 0.8f);
-	}
+    for (int i = 0; i < debrisCount; i++) {
+        drawBrickPileSmall(debrisX[i], debrisY[i], 0.8f);
+    }
 }
 
 void scene2Display() {
-	if (isNightMode) {
-		glClearColor(0.04f, 0.04f, 0.08f, 1.0f);
-	} else if (rainMode) {
-		glClearColor(0.32f, 0.30f, 0.28f, 1.0f);
-	} else {
-		glClearColor(0.45f, 0.38f, 0.32f, 1.0f);
-	}
+    if (isNightMode) {
+        glClearColor(0.04f, 0.04f, 0.08f, 1.0f);
+    }
+    else if (rainMode) {
+        glClearColor(0.32f, 0.30f, 0.28f, 1.0f);
+    }
+    else {
+        glClearColor(0.45f, 0.38f, 0.32f, 1.0f);
+    }
 
-	glClear(GL_COLOR_BUFFER_BIT);
-	scene2();
+    glClear(GL_COLOR_BUFFER_BIT);
+    scene2();
 
-	if (isNightMode)
-		NightScene();
+    if (isNightMode)
+        NightScene();
 
-	drawRain();
-	drawLightning();
+    drawRain();
+    drawLightning();
 }
 
 void scene2Update() {
-	cloudOffset += CLOUD_SPEED;
-	firePhase += FIRE_SPEED;
-	smokeOffset += SMOKE_DRIFT_SPEED;
+    cloudOffset += CLOUD_SPEED;
+    firePhase += FIRE_SPEED;
+    smokeOffset += SMOKE_DRIFT_SPEED;
 
-	if (smokeOffset > 20.0f)
-		smokeOffset = 0.0f;
+    if (smokeOffset > 20.0f)
+        smokeOffset = 0.0f;
 
-	if (lightningFlash > 0.0f) {
-		lightningFlash -= 0.15f;
-		if (lightningFlash < 0.0f)
-			lightningFlash = 0.0f;
-	}
+    if (lightningFlash > 0.0f) {
+        lightningFlash -= 0.15f;
+        if (lightningFlash < 0.0f)
+            lightningFlash = 0.0f;
+    }
 }
 
 void scene2Keyboard(unsigned char key, int, int) { handleEnvironmentKey(key); }
 
 void scene2Mouse(int button, int state, int x, int y) {
-	if (state != GLUT_DOWN)
-		return;
+    if (state != GLUT_DOWN)
+        return;
 
-	float glX = (float)x;
-	float glY = (float)(WIN_H - y);
+    float glX = (float)x;
+    float glY = (float)(WIN_H - y);
 
-	if (button == GLUT_LEFT_BUTTON) {
-		if (glY > 400.0f) {
-			lightningTargetX = glX;
-			lightningTargetY = glY;
-			lightningFlash = 1.0f;
-		} else {
-			bool deleted = false;
+    if (button == GLUT_LEFT_BUTTON) {
+        if (glY > 400.0f) {
+            lightningTargetX = glX;
+            lightningTargetY = glY;
+            lightningFlash = 1.0f;
+        }
+        else {
+            bool deleted = false;
 
-			for (int i = 0; i < debrisCount; i++) {
-				if (isNear(glX, glY, debrisX[i], debrisY[i])) {
-					debrisX[i] = debrisX[debrisCount - 1];
-					debrisY[i] = debrisY[debrisCount - 1];
-					debrisCount--;
-					deleted = true;
-					break;
-				}
-			}
+            for (int i = 0; i < debrisCount; i++) {
+                if (isNear(glX, glY, debrisX[i], debrisY[i])) {
+                    debrisX[i] = debrisX[debrisCount - 1];
+                    debrisY[i] = debrisY[debrisCount - 1];
+                    debrisCount--;
+                    deleted = true;
+                    break;
+                }
+            }
 
-			if (!deleted && debrisCount < MAX_DEBRIS) {
-				debrisX[debrisCount] = glX;
-				debrisY[debrisCount] = glY;
-				debrisCount++;
-			}
-		}
-	} else if (button == GLUT_RIGHT_BUTTON) {
-		if (glY <= 400.0f) {
-			bool deleted = false;
+            if (!deleted && debrisCount < MAX_DEBRIS) {
+                debrisX[debrisCount] = glX;
+                debrisY[debrisCount] = glY;
+                debrisCount++;
+            }
+        }
+    }
+    else if (button == GLUT_RIGHT_BUTTON) {
+        if (glY <= 400.0f) {
+            bool deleted = false;
 
-			for (int i = 0; i < fireCount; i++) {
-				if (isNear(glX, glY, userFireX[i], userFireY[i])) {
-					userFireX[i] = userFireX[fireCount - 1];
-					userFireY[i] = userFireY[fireCount - 1];
-					fireCount--;
-					deleted = true;
-					break;
-				}
-			}
+            for (int i = 0; i < fireCount; i++) {
+                if (isNear(glX, glY, userFireX[i], userFireY[i])) {
+                    userFireX[i] = userFireX[fireCount - 1];
+                    userFireY[i] = userFireY[fireCount - 1];
+                    fireCount--;
+                    deleted = true;
+                    break;
+                }
+            }
 
-			if (!deleted && fireCount < MAX_USER_FIRES) {
-				userFireX[fireCount] = glX;
-				userFireY[fireCount] = glY;
-				fireCount++;
-			}
-		}
-	}
+            if (!deleted && fireCount < MAX_USER_FIRES) {
+                userFireX[fireCount] = glX;
+                userFireY[fireCount] = glY;
+                fireCount++;
+            }
+        }
+    }
 }
 
 void scene2SpecialKeys(int key, int, int) {
-	if (key == GLUT_KEY_RIGHT)
-		switchScene(3);
-	else if (key == GLUT_KEY_LEFT)
-		switchScene(1);
+    if (key == GLUT_KEY_RIGHT)
+        switchScene(3);
+    else if (key == GLUT_KEY_LEFT)
+        switchScene(1);
 }
 
 void passiveMotion(int x, int) {
-	if (currentScene != 2)
-		return;
+    if (currentScene != 2)
+        return;
 
-	if (x < WIN_W / 3)
-		windForce = -1.0f;
-	else if (x > (WIN_W * 2) / 3)
-		windForce = 1.0f;
-	else
-		windForce = 0.0f;
+    if (x < WIN_W / 3)
+        windForce = -1.0f;
+    else if (x > (WIN_W * 2) / 3)
+        windForce = 1.0f;
+    else
+        windForce = 0.0f;
 }
 
 //===============================scene3===================================================
 struct Building {
-	float x;
-	float y;
-	float width;
-	float height;
-	float r, g, b;
-	int floors;
-	int type;
+    float x;
+    float y;
+    float width;
+    float height;
+    float r, g, b;
+    int floors;
+    int type;
 };
 
-// ============================================================
+
 // PRIMITIVE DRAWING HELPERS
-// ============================================================
+
 
 void setColor(float r, float g, float b) { glColor3f(r, g, b); }
 
 void rect(float x, float y, float width, float height) {
-	glBegin(GL_QUADS);
-	glVertex2f(x, y);
-	glVertex2f(x + width, y);
-	glVertex2f(x + width, y + height);
-	glVertex2f(x, y + height);
-	glEnd();
+    glBegin(GL_QUADS);
+    glVertex2f(x, y);
+    glVertex2f(x + width, y);
+    glVertex2f(x + width, y + height);
+    glVertex2f(x, y + height);
+    glEnd();
 }
 
 void line(float x1, float y1, float x2, float y2) {
-	glBegin(GL_LINES);
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y2);
-	glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y2);
+    glEnd();
 }
 
 void circle(float cx, float cy, float radius, int segments = 30) {
-	glBegin(GL_TRIANGLE_FAN);
-	glVertex2f(cx, cy);
-	for (int i = 0; i <= segments; i++) {
-		float angle = 2.0f * (float)M_PI * i / segments;
-		glVertex2f(cx + cos(angle) * radius, cy + sin(angle) * radius);
-	}
-	glEnd();
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex2f(cx, cy);
+    for (int i = 0; i <= segments; i++) {
+        float angle = 2.0f * (float)M_PI * i / segments;
+        glVertex2f(cx + cos(angle) * radius, cy + sin(angle) * radius);
+    }
+    glEnd();
 }
 
-// ============================================================
-// RAW-POINT CRANE MODEL (LOCAL ORIGIN 0,0)
-// ============================================================
+
+
+// [S3-OBJ-01] Construction Crane -> drawCraneModel
 
 void drawCraneModel() {
-	glLineWidth(1.6f);
+    glLineWidth(1.6f);
 
-	// 1. Base Foundation Slab & Legs
-	glColor3f(0.16f, 0.22f, 0.28f);
-	glBegin(GL_QUADS);
-	glVertex2f(-22, 0);
-	glVertex2f(22, 0);
-	glVertex2f(22, 8);
-	glVertex2f(-22, 8);
-	glEnd();
+    // 1. Base Foundation Slab & Legs
+    glColor3f(0.16f, 0.22f, 0.28f);
+    glBegin(GL_QUADS);
+    glVertex2f(-22, 0);
+    glVertex2f(22, 0);
+    glVertex2f(22, 8);
+    glVertex2f(-22, 8);
+    glEnd();
 
-	glBegin(GL_LINES);
-	glVertex2f(-20, 8);
-	glVertex2f(-10, 35);
-	glVertex2f(20, 8);
-	glVertex2f(10, 35);
-	glVertex2f(-20, 8);
-	glVertex2f(10, 8);
-	glVertex2f(20, 8);
-	glVertex2f(-10, 8);
-	glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(-20, 8);
+    glVertex2f(-10, 35);
+    glVertex2f(20, 8);
+    glVertex2f(10, 35);
+    glVertex2f(-20, 8);
+    glVertex2f(10, 8);
+    glVertex2f(20, 8);
+    glVertex2f(-10, 8);
+    glEnd();
 
-	// 2. Vertical Mast (Lattice Tower)
-	glBegin(GL_LINES);
-	glVertex2f(-10, 0);
-	glVertex2f(-10, 400);
-	glVertex2f(10, 0);
-	glVertex2f(10, 400);
+    // 2. Vertical Mast (Lattice Tower)
+    glBegin(GL_LINES);
+    glVertex2f(-10, 0);
+    glVertex2f(-10, 400);
+    glVertex2f(10, 0);
+    glVertex2f(10, 400);
 
-	for (float y = 0; y < 400; y += 50) {
-		glVertex2f(-10, y + 50);
-		glVertex2f(10, y + 50);
-		glVertex2f(-10, y);
-		glVertex2f(10, y + 50);
-		glVertex2f(10, y);
-		glVertex2f(-10, y + 50);
-	}
-	glEnd();
+    for (float y = 0; y < 400; y += 50) {
+        glVertex2f(-10, y + 50);
+        glVertex2f(10, y + 50);
+        glVertex2f(-10, y);
+        glVertex2f(10, y + 50);
+        glVertex2f(10, y);
+        glVertex2f(-10, y + 50);
+    }
+    glEnd();
 
-	// 3. Operator Cabin
-	glColor3f(0.18f, 0.24f, 0.30f);
-	glBegin(GL_POLYGON);
-	glVertex2f(2, 375);
-	glVertex2f(24, 375);
-	glVertex2f(29, 387);
-	glVertex2f(24, 397);
-	glVertex2f(2, 397);
-	glEnd();
+    // 3. Operator Cabin
+    glColor3f(0.18f, 0.24f, 0.30f);
+    glBegin(GL_POLYGON);
+    glVertex2f(2, 375);
+    glVertex2f(24, 375);
+    glVertex2f(29, 387);
+    glVertex2f(24, 397);
+    glVertex2f(2, 397);
+    glEnd();
 
-	glColor3f(0.72f, 0.86f, 0.94f);
-	glBegin(GL_POLYGON);
-	glVertex2f(9, 382);
-	glVertex2f(23, 382);
-	glVertex2f(26, 387);
-	glVertex2f(23, 393);
-	glVertex2f(9, 393);
-	glEnd();
+    glColor3f(0.72f, 0.86f, 0.94f);
+    glBegin(GL_POLYGON);
+    glVertex2f(9, 382);
+    glVertex2f(23, 382);
+    glVertex2f(26, 387);
+    glVertex2f(23, 393);
+    glVertex2f(9, 393);
+    glEnd();
 
-	// 4. Apex (Cat-Head)
-	glColor3f(0.16f, 0.22f, 0.28f);
-	glBegin(GL_LINES);
-	glVertex2f(-10, 400);
-	glVertex2f(0, 465);
-	glVertex2f(10, 400);
-	glVertex2f(0, 465);
-	glVertex2f(0, 400);
-	glVertex2f(0, 465);
-	glVertex2f(-5, 432);
-	glVertex2f(5, 432);
-	glVertex2f(-10, 400);
-	glVertex2f(5, 432);
-	glVertex2f(10, 400);
-	glVertex2f(-5, 432);
-	glEnd();
+    // 4. Apex (Cat-Head)
+    glColor3f(0.16f, 0.22f, 0.28f);
+    glBegin(GL_LINES);
+    glVertex2f(-10, 400);
+    glVertex2f(0, 465);
+    glVertex2f(10, 400);
+    glVertex2f(0, 465);
+    glVertex2f(0, 400);
+    glVertex2f(0, 465);
+    glVertex2f(-5, 432);
+    glVertex2f(5, 432);
+    glVertex2f(-10, 400);
+    glVertex2f(5, 432);
+    glVertex2f(10, 400);
+    glVertex2f(-5, 432);
+    glEnd();
 
-	// 5. Horizontal Working Jib & Counter-Jib
-	glBegin(GL_LINES);
-	glVertex2f(-75, 416);
-	glVertex2f(180, 416);
-	glVertex2f(-75, 400);
-	glVertex2f(180, 400);
-	glVertex2f(-75, 400);
-	glVertex2f(-75, 416);
-	glVertex2f(180, 400);
-	glVertex2f(180, 416);
+    // 5. Horizontal Working Jib & Counter-Jib
+    glBegin(GL_LINES);
+    glVertex2f(-75, 416);
+    glVertex2f(180, 416);
+    glVertex2f(-75, 400);
+    glVertex2f(180, 400);
+    glVertex2f(-75, 400);
+    glVertex2f(-75, 416);
+    glVertex2f(180, 400);
+    glVertex2f(180, 416);
 
-	for (float x = -75; x < 180; x += 25) {
-		float nx = std::min(x + 25.0f, 180.0f);
-		glVertex2f(nx, 400);
-		glVertex2f(nx, 416);
-		glVertex2f(x, 400);
-		glVertex2f(nx, 416);
-		glVertex2f(x, 416);
-		glVertex2f(nx, 400);
-	}
-	glEnd();
+    for (float x = -75; x < 180; x += 25) {
+        float nx = std::min(x + 25.0f, 180.0f);
+        glVertex2f(nx, 400);
+        glVertex2f(nx, 416);
+        glVertex2f(x, 400);
+        glVertex2f(nx, 416);
+        glVertex2f(x, 416);
+        glVertex2f(nx, 400);
+    }
+    glEnd();
 
-	// 6. Pendant Stay Cables
-	glColor3f(0.10f, 0.14f, 0.18f);
-	glBegin(GL_LINES);
-	glVertex2f(0, 465);
-	glVertex2f(-70, 416);
-	glVertex2f(0, 465);
-	glVertex2f(-45, 416);
-	glVertex2f(0, 465);
-	glVertex2f(90, 416);
-	glVertex2f(0, 465);
-	glVertex2f(160, 416);
-	glEnd();
+    // 6. Pendant Stay Cables
+    glColor3f(0.10f, 0.14f, 0.18f);
+    glBegin(GL_LINES);
+    glVertex2f(0, 465);
+    glVertex2f(-70, 416);
+    glVertex2f(0, 465);
+    glVertex2f(-45, 416);
+    glVertex2f(0, 465);
+    glVertex2f(90, 416);
+    glVertex2f(0, 465);
+    glVertex2f(160, 416);
+    glEnd();
 
-	// 7. Counterweight Ballast Blocks
-	glColor3f(0.38f, 0.44f, 0.48f);
-	glBegin(GL_QUADS);
-	glVertex2f(-71, 380);
-	glVertex2f(-39, 380);
-	glVertex2f(-39, 400);
-	glVertex2f(-71, 400);
-	glEnd();
+    // 7. Counterweight Ballast Blocks
+    glColor3f(0.38f, 0.44f, 0.48f);
+    glBegin(GL_QUADS);
+    glVertex2f(-71, 380);
+    glVertex2f(-39, 380);
+    glVertex2f(-39, 400);
+    glVertex2f(-71, 400);
+    glEnd();
 
-	// 8. Trolley & Suspended Steel Beam
-	glColor3f(0.22f, 0.28f, 0.34f);
-	glBegin(GL_QUADS);
-	glVertex2f(106, 395);
-	glVertex2f(124, 395);
-	glVertex2f(124, 400);
-	glVertex2f(106, 400);
-	glEnd();
+    // 8. Trolley & Suspended Steel Beam
+    glColor3f(0.22f, 0.28f, 0.34f);
+    glBegin(GL_QUADS);
+    glVertex2f(106, 395);
+    glVertex2f(124, 395);
+    glVertex2f(124, 400);
+    glVertex2f(106, 400);
+    glEnd();
 
-	glColor3f(0.10f, 0.14f, 0.18f);
-	glBegin(GL_LINES);
-	glVertex2f(112, 395);
-	glVertex2f(112, 280);
-	glVertex2f(118, 395);
-	glVertex2f(118, 280);
-	glVertex2f(115, 274);
-	glVertex2f(92, 252);
-	glVertex2f(115, 274);
-	glVertex2f(138, 252);
-	glEnd();
+    glColor3f(0.10f, 0.14f, 0.18f);
+    glBegin(GL_LINES);
+    glVertex2f(112, 395);
+    glVertex2f(112, 280);
+    glVertex2f(118, 395);
+    glVertex2f(118, 280);
+    glVertex2f(115, 274);
+    glVertex2f(92, 252);
+    glVertex2f(115, 274);
+    glVertex2f(138, 252);
+    glEnd();
 
-	glColor3f(0.50f, 0.56f, 0.60f);
-	rect(87, 244, 56, 8);
-	glLineWidth(1.0f);
+    glColor3f(0.50f, 0.56f, 0.60f);
+    rect(87, 244, 56, 8);
+    glLineWidth(1.0f);
 }
+// [S3-OBJ-02] Translated Crane -> drawTranslatedCrane
 
 void drawTranslatedCrane(float x, float y, float scaleX = 1.0f,
-						 float scaleY = 1.0f) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	if (scaleX != 1.0f || scaleY != 1.0f) {
-		glScalef(scaleX, scaleY, 1.0f);
-	}
-	drawCraneModel();
-	glPopMatrix();
+    float scaleY = 1.0f) {
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    if (scaleX != 1.0f || scaleY != 1.0f) {
+        glScalef(scaleX, scaleY, 1.0f);
+    }
+    drawCraneModel();
+    glPopMatrix();
 }
 
-// ============================================================
-// ENVIRONMENT
-// ============================================================
+
+// [S3-OBJ-03] Sky -> drawSky
 
 void drawSky() {
-	setColor(0.52f, 0.75f, 0.92f);
-	rect(0, 160, WIN_W, WIN_H - 160);
+    setColor(0.52f, 0.75f, 0.92f);
+    rect(0, 160, WIN_W, WIN_H - 160);
 
-	// Sun
-	setColor(1.0f, 0.86f, 0.25f);
-	circle(1450, 870, 55);
+    // Sun
+    setColor(1.0f, 0.86f, 0.25f);
+    circle(1450, 870, 55);
 
-	// Clouds
-	setColor(1.0f, 1.0f, 1.0f);
-	circle(180, 850, 30);
-	circle(220, 865, 40);
-	circle(265, 850, 30);
-	rect(180, 820, 85, 40);
-	circle(650, 900, 25);
-	circle(685, 915, 35);
-	circle(725, 900, 25);
-	rect(650, 875, 75, 35);
-	circle(1100, 810, 30);
-	circle(1140, 825, 42);
-	circle(1185, 810, 30);
-	rect(1100, 785, 85, 40);
+    // Clouds
+    setColor(1.0f, 1.0f, 1.0f);
+    circle(180, 850, 30);
+    circle(220, 865, 40);
+    circle(265, 850, 30);
+    rect(180, 820, 85, 40);
+    circle(650, 900, 25);
+    circle(685, 915, 35);
+    circle(725, 900, 25);
+    rect(650, 875, 75, 35);
+    circle(1100, 810, 30);
+    circle(1140, 825, 42);
+    circle(1185, 810, 30);
+    rect(1100, 785, 85, 40);
 }
+// [S3-OBJ-04] Road/Ground -> drawGround
 
 void drawGround() {
-	setColor(0.40f, 0.58f, 0.32f);
-	rect(0, 0, WIN_W, 160);
+    setColor(0.40f, 0.58f, 0.32f);
+    rect(0, 0, WIN_W, 160);
 
-	setColor(0.62f, 0.62f, 0.60f);
-	rect(0, 125, WIN_W, 35);
+    setColor(0.62f, 0.62f, 0.60f);
+    rect(0, 125, WIN_W, 35);
 
-	setColor(0.15f, 0.15f, 0.16f);
-	rect(0, 0, WIN_W, 125);
+    setColor(0.15f, 0.15f, 0.16f);
+    rect(0, 0, WIN_W, 125);
 
-	setColor(0.95f, 0.82f, 0.20f);
-	for (int x = 20; x < WIN_W; x += 120) {
-		rect(x, 58, 65, 7);
-	}
+    setColor(0.95f, 0.82f, 0.20f);
+    for (int x = 20; x < WIN_W; x += 120) {
+        rect(x, 58, 65, 7);
+    }
 
-	setColor(0.48f, 0.48f, 0.46f);
-	for (int x = 0; x < WIN_W; x += 80) {
-		line(x, 125, x + 35, 160);
-	}
+    setColor(0.48f, 0.48f, 0.46f);
+    for (int x = 0; x < WIN_W; x += 80) {
+        line(x, 125, x + 35, 160);
+    }
 }
+// [S3-OBJ-05] Background Buildings -> drawBackgroundBuildings
 
 void drawBackgroundBuildings() {
-	setColor(0.48f, 0.57f, 0.63f);
-	rect(0, 160, 70, 230);
-	setColor(0.43f, 0.52f, 0.58f);
-	rect(75, 160, 70, 270);
-	setColor(0.46f, 0.56f, 0.63f);
-	rect(1525, 160, 75, 270);
+    setColor(0.48f, 0.57f, 0.63f);
+    rect(0, 160, 70, 230);
+    setColor(0.43f, 0.52f, 0.58f);
+    rect(75, 160, 70, 270);
+    setColor(0.46f, 0.56f, 0.63f);
+    rect(1525, 160, 75, 270);
 
-	setColor(0.85f, 0.90f, 0.88f);
-	for (int y = 190; y < 390; y += 35) {
-		rect(15, y, 40, 10);
-		rect(90, y, 40, 10);
-		rect(1545, y, 35, 10);
-	}
+    setColor(0.85f, 0.90f, 0.88f);
+    for (int y = 190; y < 390; y += 35) {
+        rect(15, y, 40, 10);
+        rect(90, y, 40, 10);
+        rect(1545, y, 35, 10);
+    }
 }
 
-// ============================================================
+
 // COMPLETED BUILDINGS
-// ============================================================
 
-void buildingNormal(const Building &b) {
-	setColor(b.r, b.g, b.b);
-	rect(b.x, b.y, b.width, b.height);
-	setColor(b.r * 0.75f, b.g * 0.75f, b.b * 0.75f);
-	rect(b.x - 3, b.y + b.height, b.width + 6, 8);
+// [S3-OBJ-06] Normal Building -> buildingNormal
 
-	float floorHeight = b.height / b.floors;
-	setColor(0.78f, 0.88f, 0.92f);
-	for (int floor = 0; floor < b.floors; floor++) {
-		float wy = b.y + floor * floorHeight + floorHeight * 0.30f;
-		int columns = (int)(b.width / 35.0f);
-		if (columns < 1)
-			columns = 1;
-		float spacing = b.width / (columns + 1);
+void buildingNormal(const Building& b) {
+    setColor(b.r, b.g, b.b);
+    rect(b.x, b.y, b.width, b.height);
+    setColor(b.r * 0.75f, b.g * 0.75f, b.b * 0.75f);
+    rect(b.x - 3, b.y + b.height, b.width + 6, 8);
 
-		for (int col = 0; col < columns; col++) {
-			float wx = b.x + spacing * (col + 1) - 7;
-			rect(wx, wy, 14, floorHeight * 0.35f);
-		}
-	}
+    float floorHeight = b.height / b.floors;
+    setColor(0.78f, 0.88f, 0.92f);
+    for (int floor = 0; floor < b.floors; floor++) {
+        float wy = b.y + floor * floorHeight + floorHeight * 0.30f;
+        int columns = (int)(b.width / 35.0f);
+        if (columns < 1)
+            columns = 1;
+        float spacing = b.width / (columns + 1);
+
+        for (int col = 0; col < columns; col++) {
+            float wx = b.x + spacing * (col + 1) - 7;
+            rect(wx, wy, 14, floorHeight * 0.35f);
+        }
+    }
+}
+// [S3-OBJ-07] Glass Building -> buildingGlass
+
+void buildingGlass(const Building& b) {
+    setColor(b.r, b.g, b.b);
+    rect(b.x, b.y, b.width, b.height);
+
+    setColor(0.20f, 0.38f, 0.48f);
+    int columns = (int)(b.width / 25.0f);
+    for (int i = 1; i < columns; i++) {
+        float x = b.x + i * b.width / columns;
+        line(x, b.y, x, b.y + b.height);
+    }
+
+    for (int i = 1; i < b.floors; i++) {
+        float y = b.y + i * b.height / b.floors;
+        line(b.x, y, b.x + b.width, y);
+    }
+
+    setColor(0.75f, 0.90f, 0.95f);
+    for (int floor = 0; floor < b.floors; floor++) {
+        float y = b.y + floor * b.height / b.floors + 10;
+        for (int col = 0; col < columns; col++) {
+            float x = b.x + col * b.width / columns + 5;
+            rect(x, y, b.width / columns - 10, b.height / b.floors - 18);
+        }
+    }
 }
 
-void buildingGlass(const Building &b) {
-	setColor(b.r, b.g, b.b);
-	rect(b.x, b.y, b.width, b.height);
 
-	setColor(0.20f, 0.38f, 0.48f);
-	int columns = (int)(b.width / 25.0f);
-	for (int i = 1; i < columns; i++) {
-		float x = b.x + i * b.width / columns;
-		line(x, b.y, x, b.y + b.height);
-	}
+// [S3-OBJ-08] Half-Constructed Building -> drawHalfConstructedBuilding
 
-	for (int i = 1; i < b.floors; i++) {
-		float y = b.y + i * b.height / b.floors;
-		line(b.x, y, b.x + b.width, y);
-	}
+void drawHalfConstructedBuilding(const Building& b, float progress) {
+    float currentHeight = b.height * progress;
 
-	setColor(0.75f, 0.90f, 0.95f);
-	for (int floor = 0; floor < b.floors; floor++) {
-		float y = b.y + floor * b.height / b.floors + 10;
-		for (int col = 0; col < columns; col++) {
-			float x = b.x + col * b.width / columns + 5;
-			rect(x, y, b.width / columns - 10, b.height / b.floors - 18);
-		}
-	}
+    // Completed lower section
+    setColor(b.r, b.g, b.b);
+    rect(b.x, b.y, b.width, currentHeight);
+
+    float floorHeight = b.height / b.floors;
+    setColor(0.30f, 0.32f, 0.34f);
+    int completedFloors = (int)(currentHeight / floorHeight);
+
+    for (int i = 0; i <= completedFloors; i++) {
+        float y = b.y + i * floorHeight;
+        if (y <= b.y + currentHeight) {
+            rect(b.x - 4, y, b.width + 8, 5);
+        }
+    }
+
+    // Windows
+    setColor(0.75f, 0.88f, 0.93f);
+    for (int floor = 0; floor < completedFloors; floor++) {
+        float y = b.y + floor * floorHeight + 10;
+        int columns = (int)(b.width / 30.0f);
+        if (columns < 1)
+            columns = 1;
+        float windowWidth = b.width / (columns + 1);
+
+        for (int c = 0; c < columns; c++) {
+            float x = b.x + windowWidth * (c + 1) - 6;
+            rect(x, y, 12, floorHeight * 0.35f);
+        }
+    }
+
+    // Short, reduced rebar stubs at the top slab (12px high)
+    if (progress < 1.0f) {
+        setColor(0.25f, 0.28f, 0.30f);
+        float topY = b.y + currentHeight;
+        glLineWidth(2.0f);
+        for (float x = b.x + 8; x < b.x + b.width; x += 16) {
+            line(x, topY, x, topY + 12);
+        }
+        glLineWidth(1.0f);
+    }
 }
-
-// ============================================================
-// 1. STANDARD HALF-CONSTRUCTED BUILDING (SHORT REBAR STUBS)
-// ============================================================
-
-void drawHalfConstructedBuilding(const Building &b, float progress) {
-	float currentHeight = b.height * progress;
-
-	// Completed lower section
-	setColor(b.r, b.g, b.b);
-	rect(b.x, b.y, b.width, currentHeight);
-
-	float floorHeight = b.height / b.floors;
-	setColor(0.30f, 0.32f, 0.34f);
-	int completedFloors = (int)(currentHeight / floorHeight);
-
-	for (int i = 0; i <= completedFloors; i++) {
-		float y = b.y + i * floorHeight;
-		if (y <= b.y + currentHeight) {
-			rect(b.x - 4, y, b.width + 8, 5);
-		}
-	}
-
-	// Windows
-	setColor(0.75f, 0.88f, 0.93f);
-	for (int floor = 0; floor < completedFloors; floor++) {
-		float y = b.y + floor * floorHeight + 10;
-		int columns = (int)(b.width / 30.0f);
-		if (columns < 1)
-			columns = 1;
-		float windowWidth = b.width / (columns + 1);
-
-		for (int c = 0; c < columns; c++) {
-			float x = b.x + windowWidth * (c + 1) - 6;
-			rect(x, y, 12, floorHeight * 0.35f);
-		}
-	}
-
-	// Short, reduced rebar stubs at the top slab (12px high)
-	if (progress < 1.0f) {
-		setColor(0.25f, 0.28f, 0.30f);
-		float topY = b.y + currentHeight;
-		glLineWidth(2.0f);
-		for (float x = b.x + 8; x < b.x + b.width; x += 16) {
-			line(x, topY, x, topY + 12);
-		}
-		glLineWidth(1.0f);
-	}
-}
-// ============================================================
 // 1. LEFT SUPERSTRUCTURE (SHORTER TOWER)
-// ============================================================
+
+// [S3-OBJ-09] Steel Superstructure -> drawSteelSuperstructure
 void drawSteelSuperstructure(float x, float y, float scaleX = 1.0f,
-							 float scaleY = 1.0f) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scaleX, scaleY,
-			 1.0f); // Scales width and height uniformly or non-uniformly
+    float scaleY = 1.0f) {
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scaleX, scaleY,
+        1.0f);
 
-	// --------------------------------------------------------
-	// A. BACKGROUND ELEVATOR CORES (GL_POLYGON)
-	// --------------------------------------------------------
-	glColor3f(0.55f, 0.65f, 0.72f);
 
-	// Left core shaft
-	glBegin(GL_POLYGON);
-	glVertex2f(18.0f, 0.0f);
-	glVertex2f(40.0f, 0.0f);
-	glVertex2f(40.0f, 230.0f);
-	glVertex2f(18.0f, 230.0f);
-	glEnd();
+    glColor3f(0.55f, 0.65f, 0.72f);
 
-	// Right core shaft
-	glBegin(GL_POLYGON);
-	glVertex2f(54.0f, 0.0f);
-	glVertex2f(78.0f, 0.0f);
-	glVertex2f(78.0f, 255.0f);
-	glVertex2f(54.0f, 255.0f);
-	glEnd();
+    // Left core shaft
+    glBegin(GL_POLYGON);
+    glVertex2f(18.0f, 0.0f);
+    glVertex2f(40.0f, 0.0f);
+    glVertex2f(40.0f, 230.0f);
+    glVertex2f(18.0f, 230.0f);
+    glEnd();
 
-	// --------------------------------------------------------
-	// B. CARGO PALLET BOXES (GL_POLYGON)
-	// --------------------------------------------------------
-	glColor3f(0.60f, 0.42f, 0.22f);
 
-	// Left Box
-	glBegin(GL_POLYGON);
-	glVertex2f(12.0f, 4.0f);
-	glVertex2f(38.0f, 4.0f);
-	glVertex2f(38.0f, 22.0f);
-	glVertex2f(12.0f, 22.0f);
-	glEnd();
+    glBegin(GL_POLYGON);
+    glVertex2f(54.0f, 0.0f);
+    glVertex2f(78.0f, 0.0f);
+    glVertex2f(78.0f, 255.0f);
+    glVertex2f(54.0f, 255.0f);
+    glEnd();
 
-	// Right Box
-	glBegin(GL_POLYGON);
-	glVertex2f(48.0f, 4.0f);
-	glVertex2f(70.0f, 4.0f);
-	glVertex2f(70.0f, 16.0f);
-	glVertex2f(48.0f, 16.0f);
-	glEnd();
 
-	// --------------------------------------------------------
-	// C. VERTICAL STEEL COLUMNS (GL_QUADS)
-	// --------------------------------------------------------
-	glColor3f(0.38f, 0.45f, 0.50f);
-	glBegin(GL_QUADS);
-	// Column 1 (Left edge)
-	glVertex2f(2.0f, 0.0f);
-	glVertex2f(8.0f, 0.0f);
-	glVertex2f(8.0f, 260.0f);
-	glVertex2f(2.0f, 260.0f);
+    glColor3f(0.60f, 0.42f, 0.22f);
 
-	// Column 2 (Middle)
-	glVertex2f(42.0f, 0.0f);
-	glVertex2f(48.0f, 0.0f);
-	glVertex2f(48.0f, 260.0f);
-	glVertex2f(42.0f, 260.0f);
 
-	// Column 3 (Right mast - tallest top extension)
-	glVertex2f(82.0f, 0.0f);
-	glVertex2f(88.0f, 0.0f);
-	glVertex2f(88.0f, 295.0f);
-	glVertex2f(82.0f, 295.0f);
+    glBegin(GL_POLYGON);
+    glVertex2f(12.0f, 4.0f);
+    glVertex2f(38.0f, 4.0f);
+    glVertex2f(38.0f, 22.0f);
+    glVertex2f(12.0f, 22.0f);
+    glEnd();
 
-	// Column 4 (Right cantilever column)
-	glVertex2f(118.0f, 20.0f);
-	glVertex2f(124.0f, 20.0f);
-	glVertex2f(124.0f, 165.0f);
-	glVertex2f(118.0f, 165.0f);
-	glEnd();
 
-	// --------------------------------------------------------
-	// D. HORIZONTAL STEEL BEAMS (GL_QUADS)
-	// --------------------------------------------------------
-	glBegin(GL_QUADS);
-	// 8 Main floor beams
-	for (int i = 1; i <= 8; i++) {
-		float yPos = i * 28.0f;
-		glVertex2f(2.0f, yPos);
-		glVertex2f(88.0f, yPos);
-		glVertex2f(88.0f, yPos + 6.0f);
-		glVertex2f(2.0f, yPos + 6.0f);
-	}
+    glBegin(GL_POLYGON);
+    glVertex2f(48.0f, 4.0f);
+    glVertex2f(70.0f, 4.0f);
+    glVertex2f(70.0f, 16.0f);
+    glVertex2f(48.0f, 16.0f);
+    glEnd();
 
-	// Extended lower cantilever beam
-	glVertex2f(88.0f, 30.0f);
-	glVertex2f(128.0f, 30.0f);
-	glVertex2f(128.0f, 36.0f);
-	glVertex2f(88.0f, 36.0f);
-	glEnd();
 
-	// --------------------------------------------------------
-	// E. DIAGONAL CROSS-BRACING GIRDERS (GL_LINES)
-	// --------------------------------------------------------
-	glLineWidth(4.0f);
-	glColor3f(0.32f, 0.38f, 0.44f);
-	glBegin(GL_LINES);
-	glVertex2f(48.0f, 6.0f);
-	glVertex2f(82.0f, 28.0f);
-	glVertex2f(48.0f, 34.0f);
-	glVertex2f(82.0f, 56.0f);
-	glVertex2f(48.0f, 62.0f);
-	glVertex2f(82.0f, 84.0f);
-	glEnd();
+    glColor3f(0.38f, 0.45f, 0.50f);
+    glBegin(GL_QUADS);
+    glVertex2f(2.0f, 0.0f);
+    glVertex2f(8.0f, 0.0f);
+    glVertex2f(8.0f, 260.0f);
+    glVertex2f(2.0f, 260.0f);
 
-	// --------------------------------------------------------
-	// F. OUTLINE ACCENTS (GL_LINES)
-	// --------------------------------------------------------
-	glLineWidth(1.0f);
-	glColor3f(0.20f, 0.25f, 0.28f);
-	glBegin(GL_LINES);
-	glVertex2f(2.0f, 0.0f);
-	glVertex2f(2.0f, 260.0f);
-	glVertex2f(42.0f, 0.0f);
-	glVertex2f(42.0f, 260.0f);
-	glVertex2f(82.0f, 0.0f);
-	glVertex2f(82.0f, 295.0f);
-	glVertex2f(118.0f, 20.0f);
-	glVertex2f(118.0f, 165.0f);
-	glEnd();
+    glVertex2f(42.0f, 0.0f);
+    glVertex2f(48.0f, 0.0f);
+    glVertex2f(48.0f, 260.0f);
+    glVertex2f(42.0f, 260.0f);
 
-	glPopMatrix();
+    glVertex2f(82.0f, 0.0f);
+    glVertex2f(88.0f, 0.0f);
+    glVertex2f(88.0f, 295.0f);
+    glVertex2f(82.0f, 295.0f);
+
+    glVertex2f(118.0f, 20.0f);
+    glVertex2f(124.0f, 20.0f);
+    glVertex2f(124.0f, 165.0f);
+    glVertex2f(118.0f, 165.0f);
+    glEnd();
+
+
+    glBegin(GL_QUADS);
+    for (int i = 1; i <= 8; i++) {
+        float yPos = i * 28.0f;
+        glVertex2f(2.0f, yPos);
+        glVertex2f(88.0f, yPos);
+        glVertex2f(88.0f, yPos + 6.0f);
+        glVertex2f(2.0f, yPos + 6.0f);
+    }
+
+    glVertex2f(88.0f, 30.0f);
+    glVertex2f(128.0f, 30.0f);
+    glVertex2f(128.0f, 36.0f);
+    glVertex2f(88.0f, 36.0f);
+    glEnd();
+
+
+    glLineWidth(4.0f);
+    glColor3f(0.32f, 0.38f, 0.44f);
+    glBegin(GL_LINES);
+    glVertex2f(48.0f, 6.0f);
+    glVertex2f(82.0f, 28.0f);
+    glVertex2f(48.0f, 34.0f);
+    glVertex2f(82.0f, 56.0f);
+    glVertex2f(48.0f, 62.0f);
+    glVertex2f(82.0f, 84.0f);
+    glEnd();
+
+
+    glLineWidth(1.0f);
+    glColor3f(0.20f, 0.25f, 0.28f);
+    glBegin(GL_LINES);
+    glVertex2f(2.0f, 0.0f);
+    glVertex2f(2.0f, 260.0f);
+    glVertex2f(42.0f, 0.0f);
+    glVertex2f(42.0f, 260.0f);
+    glVertex2f(82.0f, 0.0f);
+    glVertex2f(82.0f, 295.0f);
+    glVertex2f(118.0f, 20.0f);
+    glVertex2f(118.0f, 165.0f);
+    glEnd();
+
+    glPopMatrix();
 }
 
-// ============================================================
-// ACCESSORIES & TREES
-// ============================================================
+
+// [S3-OBJ-10] Construction Materials -> drawMaterials
 
 void drawMaterials(float x, float y) {
-	setColor(0.72f, 0.40f, 0.20f);
-	rect(x, y, 45, 12);
-	rect(x + 5, y + 12, 45, 12);
-	rect(x - 5, y + 24, 45, 12);
+    setColor(0.72f, 0.40f, 0.20f);
+    rect(x, y, 45, 12);
+    rect(x + 5, y + 12, 45, 12);
+    rect(x - 5, y + 24, 45, 12);
 
-	setColor(0.35f, 0.37f, 0.38f);
-	for (int i = 0; i < 5; i++) {
-		line(x + i * 8, y + 40, x + i * 8 + 20, y + 40);
-	}
+    setColor(0.35f, 0.37f, 0.38f);
+    for (int i = 0; i < 5; i++) {
+        line(x + i * 8, y + 40, x + i * 8 + 20, y + 40);
+    }
 }
+// [S3-OBJ-11] Construction Tree -> tree
 
 void tree(float x, float y, float scale) {
-	glColor3f(0.38f, 0.23f, 0.10f);
-	drawRect(x - 6.0f * scale, y, x + 6.0f * scale, y + 40.0f * scale);
+    glColor3f(0.38f, 0.23f, 0.10f);
+    drawRect(x - 6.0f * scale, y, x + 6.0f * scale, y + 40.0f * scale);
 
-	glColor3f(0.12f, 0.50f, 0.18f);
-	drawCircle(x, y + 65.0f * scale, 27.0f * scale);
-	drawCircle(x - 20.0f * scale, y + 52.0f * scale, 22.0f * scale);
-	drawCircle(x + 20.0f * scale, y + 52.0f * scale, 22.0f * scale);
-	drawCircle(x, y + 87.0f * scale, 20.0f * scale);
+    glColor3f(0.12f, 0.50f, 0.18f);
+    drawCircle(x, y + 65.0f * scale, 27.0f * scale);
+    drawCircle(x - 20.0f * scale, y + 52.0f * scale, 22.0f * scale);
+    drawCircle(x + 20.0f * scale, y + 52.0f * scale, 22.0f * scale);
+    drawCircle(x, y + 87.0f * scale, 20.0f * scale);
 }
+// [S3-OBJ-12] Tree Group -> drawTrees
 
 void drawTrees() {
-	tree(35, 160, 1.0f);
-	tree(145, 160, 0.85f);
-	tree(285, 160, 0.90f);
-	tree(390, 160, 0.75f);
-	tree(525, 160, 0.95f);
-	tree(660, 160, 0.80f);
-	tree(790, 160, 0.90f);
-	tree(1000, 160, 0.75f);
-	tree(1090, 160, 0.95f);
-	tree(1250, 160, 0.80f);
-	tree(1400, 160, 0.95f);
-	tree(1530, 160, 0.85f);
-	tree(1580, 160, 0.75f);
+    tree(35, 160, 1.0f);
+    tree(145, 160, 0.85f);
+    tree(285, 160, 0.90f);
+    tree(390, 160, 0.75f);
+    tree(525, 160, 0.95f);
+    tree(660, 160, 0.80f);
+    tree(790, 160, 0.90f);
+    tree(1000, 160, 0.75f);
+    tree(1090, 160, 0.95f);
+    tree(1250, 160, 0.80f);
+    tree(1400, 160, 0.95f);
+    tree(1530, 160, 0.85f);
+    tree(1580, 160, 0.75f);
 }
+// [S3-OBJ-13] Road Barrier -> drawBarrier
 
 void drawBarrier(float x, float y) {
-	setColor(0.95f, 0.65f, 0.05f);
-	rect(x, y, 75, 8);
-	setColor(0.25f, 0.25f, 0.25f);
-	rect(x + 5, y - 25, 7, 25);
-	rect(x + 63, y - 25, 7, 25);
-	setColor(0.15f, 0.15f, 0.15f);
-	line(x + 5, y, x + 25, y + 8);
-	line(x + 30, y, x + 50, y + 8);
-	line(x + 55, y, x + 70, y + 8);
+    setColor(0.95f, 0.65f, 0.05f);
+    rect(x, y, 75, 8);
+    setColor(0.25f, 0.25f, 0.25f);
+    rect(x + 5, y - 25, 7, 25);
+    rect(x + 63, y - 25, 7, 25);
+    setColor(0.15f, 0.15f, 0.15f);
+    line(x + 5, y, x + 25, y + 8);
+    line(x + 30, y, x + 50, y + 8);
+    line(x + 55, y, x + 70, y + 8);
 }
+// [S3-OBJ-14] Construction Sign -> drawConstructionSign
 
 void drawConstructionSign(float x, float y) {
-	setColor(0.25f, 0.25f, 0.25f);
-	rect(x, y, 6, 70);
-	rect(x + 74, y, 6, 70);
-	setColor(0.95f, 0.65f, 0.05f);
-	rect(x - 10, y + 50, 100, 45);
-	setColor(0.15f, 0.15f, 0.15f);
-	rect(x + 35, y + 65, 10, 20);
-	circle(x + 40, y + 58, 5);
+    setColor(0.25f, 0.25f, 0.25f);
+    rect(x, y, 6, 70);
+    rect(x + 74, y, 6, 70);
+    setColor(0.95f, 0.65f, 0.05f);
+    rect(x - 10, y + 50, 100, 45);
+    setColor(0.15f, 0.15f, 0.15f);
+    rect(x + 35, y + 65, 10, 20);
+    circle(x + 40, y + 58, 5);
 }
 
-// ============================================================
-// MAIN SCENE
-// ============================================================
+
+// [S3-OBJ-15] Partial City -> drawPartialCity
 
 void drawPartialCity() {
 
-	if (!isNightMode && !rainMode) {
-		glPushMatrix();
-		glTranslatef(550.0f, 250.0f, 0.0f);
-		sun();
-		glPopMatrix();
-	}
+    if (!isNightMode && !rainMode) {
+        glPushMatrix();
+        glTranslatef(550.0f, 250.0f, 0.0f);
+        sun();
+        glPopMatrix();
+    }
 
-	drawClouds();
+    drawClouds();
 
-	drawMountains();
-	drawHills();
-	drawGround();
+    drawMountains();
+    drawHills();
+    drawGround();
 
-	drawBackgroundBuildings();
+    drawBackgroundBuildings();
 
-	// Established Completed Buildings
-	Building left1 = {45, 160, 100, 150, 0.72f, 0.43f, 0.35f, 5, 0};
-	buildingNormal(left1);
+    // Established Completed Buildings
+    Building left1 = { 45, 160, 100, 150, 0.72f, 0.43f, 0.35f, 5, 0 };
+    buildingNormal(left1);
 
-	Building left2 = {175, 160, 110, 190, 0.45f, 0.65f, 0.75f, 6, 1};
-	buildingGlass(left2);
+    Building left2 = { 175, 160, 110, 190, 0.45f, 0.65f, 0.75f, 6, 1 };
+    buildingGlass(left2);
 
-	Building left3 = {310, 160, 90, 140, 0.72f, 0.58f, 0.46f, 5, 0};
-	buildingNormal(left3);
+    Building left3 = { 310, 160, 90, 140, 0.72f, 0.58f, 0.46f, 5, 0 };
+    buildingNormal(left3);
 
-	// ========================================================
-	// LARGEST BUILDING #1 (HEAVY STEEL SUPERSTRUCTURE WITH BRACES)
-	// ========================================================
-	Building tower1 = {670, 160, 140, 150, 0.48f, 0.68f, 0.76f, 5, 1};
-	buildingNormal(tower1);
-	drawSteelSuperstructure(tower1.x + 5.0f, tower1.y + tower1.height, 0.90f,
-							0.78f);
+    // LARGEST BUILDING #1 (HEAVY STEEL SUPERSTRUCTURE WITH BRACES)
 
-	// Small/Medium Buildings (Cleaned up with short rebar stubs)
-	Building tower2 = {420, 160, 115, 360, 0.35f, 0.55f, 0.68f, 12, 2};
-	drawHalfConstructedBuilding(tower2, 0.65f);
+    Building tower1 = { 670, 160, 140, 150, 0.48f, 0.68f, 0.76f, 5, 1 };
+    buildingNormal(tower1);
+    drawSteelSuperstructure(tower1.x + 5.0f, tower1.y + tower1.height, 0.90f,
+        0.78f);
 
-	Building centerLow = {550, 160, 105, 230, 0.70f, 0.55f, 0.43f, 7, 0};
-	buildingNormal(centerLow);
+    // Small/Medium Buildings (Cleaned up with short rebar stubs)
+    Building tower2 = { 420, 160, 115, 360, 0.35f, 0.55f, 0.68f, 12, 2 };
+    drawHalfConstructedBuilding(tower2, 0.65f);
 
-	// ========================================================
-	// LARGEST BUILDING #2 (MAIN CENTRAL TALL TOWER)
-	// ========================================================
-	Building central = {830, 160, 140, 200, 0.45f, 0.66f, 0.76f, 6, 1};
-	buildingNormal(central);
-	drawSteelSuperstructure(central.x + 5.0f, central.y + central.height, 1.05f,
-							1.0f);
+    Building centerLow = { 550, 160, 105, 230, 0.70f, 0.55f, 0.43f, 7, 0 };
+    buildingNormal(centerLow);
 
-	Building centerRight = {995, 160, 115, 280, 0.72f, 0.62f, 0.52f, 9, 0};
-	buildingNormal(centerRight);
+    // LARGEST BUILDING #2 (MAIN CENTRAL TALL TOWER)
+    Building central = { 830, 160, 140, 200, 0.45f, 0.66f, 0.76f, 6, 1 };
+    buildingNormal(central);
+    drawSteelSuperstructure(central.x + 5.0f, central.y + central.height, 1.05f,
+        1.0f);
 
-	// Medium/Small Towers (Reduced lines)
-	Building rightTower = {1130, 160, 120, 400, 0.42f, 0.61f, 0.70f, 14, 1};
-	drawHalfConstructedBuilding(rightTower, 0.55f);
+    Building centerRight = { 995, 160, 115, 280, 0.72f, 0.62f, 0.52f, 9, 0 };
+    buildingNormal(centerRight);
 
-	Building twin1 = {1280, 160, 95, 420, 0.52f, 0.63f, 0.70f, 15, 1};
-	drawHalfConstructedBuilding(twin1, 0.40f);
+    // Medium/Small Towers (Reduced lines)
+    Building rightTower = { 1130, 160, 120, 400, 0.42f, 0.61f, 0.70f, 14, 1 };
+    drawHalfConstructedBuilding(rightTower, 0.55f);
 
-	Building twin2 = {1410, 160, 95, 420, 0.12f, 0.48f, 0.66f, 15, 1};
-	drawHalfConstructedBuilding(twin2, 0.25f);
+    Building twin1 = { 1280, 160, 95, 420, 0.52f, 0.63f, 0.70f, 15, 1 };
+    drawHalfConstructedBuilding(twin1, 0.40f);
 
-	Building rightLow = {1520, 160, 80, 240, 0.68f, 0.42f, 0.38f, 7, 0};
-	buildingNormal(rightLow);
+    Building twin2 = { 1410, 160, 95, 420, 0.12f, 0.48f, 0.66f, 15, 1 };
+    drawHalfConstructedBuilding(twin2, 0.25f);
 
-	// ========================================================
-	// CRANES (POSITIONED OVER THE ACTIVE CONSTRUCTION SITES)
-	// ========================================================
-	drawTranslatedCrane(520.0f, 160.0f, 1.05f, 1.25f);
-	drawTranslatedCrane(820.0f, 160.0f, 1.15f, 1.40f);
-	drawTranslatedCrane(1270.0f, 160.0f, -1.0f, 1.20f);
+    Building rightLow = { 1520, 160, 80, 240, 0.68f, 0.42f, 0.38f, 7, 0 };
+    buildingNormal(rightLow);
 
-	// Accessories
-	drawMaterials(360, 165);
-	drawMaterials(680, 165);
-	drawMaterials(1060, 165);
-	drawMaterials(1260, 165);
+    drawTranslatedCrane(520.0f, 160.0f, 1.05f, 1.25f);
+    drawTranslatedCrane(820.0f, 160.0f, 1.15f, 1.40f);
+    drawTranslatedCrane(1270.0f, 160.0f, -1.0f, 1.20f);
 
-	drawBarrier(420, 170);
-	drawBarrier(720, 170);
-	drawBarrier(1030, 170);
-	drawBarrier(1320, 170);
+    // Accessories
+    drawMaterials(360, 165);
+    drawMaterials(680, 165);
+    drawMaterials(1060, 165);
+    drawMaterials(1260, 165);
 
-	drawConstructionSign(285, 165);
-	drawConstructionSign(1080, 165);
+    drawBarrier(420, 170);
+    drawBarrier(720, 170);
+    drawBarrier(1030, 170);
+    drawBarrier(1320, 170);
 
-	drawTrees();
+    drawConstructionSign(285, 165);
+    drawConstructionSign(1080, 165);
+
+    drawTrees();
 }
 
 void scene3Display() {
-	if (isNightMode)
-		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
-	else
-		glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
+    if (isNightMode)
+        glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
+    else
+        glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
 
-	glClear(GL_COLOR_BUFFER_BIT);
-	drawPartialCity();
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawPartialCity();
 
-	if (isNightMode)
-		drawNightOverlay();
-	drawRain();
+    if (isNightMode)
+        drawNightOverlay();
+    drawRain();
 }
 
 void scene3Update() { cloudOffset += CLOUD_SPEED; }
@@ -2782,844 +2779,841 @@ void scene3Keyboard(unsigned char key, int, int) { handleEnvironmentKey(key); }
 void scene3Mouse(int, int, int, int) {}
 
 void scene3SpecialKeys(int key, int, int) {
-	if (key == GLUT_KEY_RIGHT)
-		switchScene(4);
-	else if (key == GLUT_KEY_LEFT)
-		switchScene(2);
+    if (key == GLUT_KEY_RIGHT)
+        switchScene(4);
+    else if (key == GLUT_KEY_LEFT)
+        switchScene(2);
 }
 
 //==============================scene4===================================================
+// [S4-OBJ-01] Rectangle Outline -> drawRectOutline
 
 void drawRectOutline(float x1, float y1, float x2, float y2,
-					 float lineWidth = 3.0f, float r = 0.12f, float g = 0.14f,
-					 float b = 0.18f) {
-	glColor3f(r, g, b);
-	glLineWidth(lineWidth);
-	glBegin(GL_LINE_LOOP);
-	glVertex2f(x1, y1);
-	glVertex2f(x2, y1);
-	glVertex2f(x2, y2);
-	glVertex2f(x1, y2);
-	glEnd();
-	glLineWidth(1.0f);
+    float lineWidth = 3.0f, float r = 0.12f, float g = 0.14f,
+    float b = 0.18f) {
+    glColor3f(r, g, b);
+    glLineWidth(lineWidth);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y1);
+    glVertex2f(x2, y2);
+    glVertex2f(x1, y2);
+    glEnd();
+    glLineWidth(1.0f);
 }
+// [S4-OBJ-02] Window Grid -> drawWindowGrid
 
 void drawWindowGrid(float startX, float startY, float totalWidth,
-					float totalHeight, int floors, int cols,
-					bool isGlass = false) {
+    float totalHeight, int floors, int cols,
+    bool isGlass = false) {
 
-	float floorHeight = totalHeight / (float)floors;
-	float slotWidth =
-		(totalWidth * 0.65f) / (float)cols; // per row windows size
-	float sideMargin = totalWidth * 0.175f; // left side gap
-	float vertMargin = floorHeight * 0.28f; // vertical gap ( bottom gap)
-	float ww = slotWidth * 0.62f;			// actual winodw hight and width
-	float wh = floorHeight * 0.44f;
+    float floorHeight = totalHeight / (float)floors;
+    float slotWidth =
+        (totalWidth * 0.65f) / (float)cols; // per row windows size
+    float sideMargin = totalWidth * 0.175f; // left side gap
+    float vertMargin = floorHeight * 0.28f; // vertical gap ( bottom gap)
+    float ww = slotWidth * 0.62f;			// actual winodw hight and width
+    float wh = floorHeight * 0.44f;
 
-	if (isGlass)
-		glColor3f(0.15f, 0.48f, 0.68f);
-	else
-		glColor3f(0.15f, 0.28f, 0.38f);
+    if (isGlass)
+        glColor3f(0.15f, 0.48f, 0.68f);
+    else
+        glColor3f(0.15f, 0.28f, 0.38f);
 
-	for (int r = 0; r < floors; r++) {
-		float wy = startY + (float)r * floorHeight +
-				   vertMargin; // moves the point to specific floor
-		for (int c = 0; c < cols; c++) {
-			float wx =
-				startX + sideMargin + (float)c * slotWidth; // moves coloum
-			glBegin(GL_QUADS);
-			glVertex2f(wx, wy);
-			glVertex2f(wx + ww, wy);
-			glVertex2f(wx + ww, wy + wh);
-			glVertex2f(wx, wy + wh);
-			glEnd();
-		}
-	}
+    for (int r = 0; r < floors; r++) {
+        float wy = startY + (float)r * floorHeight +
+            vertMargin; // moves the point to specific floor
+        for (int c = 0; c < cols; c++) {
+            float wx =
+                startX + sideMargin + (float)c * slotWidth; // moves coloum
+            glBegin(GL_QUADS);
+            glVertex2f(wx, wy);
+            glVertex2f(wx + ww, wy);
+            glVertex2f(wx + ww, wy + wh);
+            glVertex2f(wx, wy + wh);
+            glEnd();
+        }
+    }
 }
 //-------------------------twin tower----
+// [S4-OBJ-03] Twin Tower -> drawTwinTower
 
 void drawTwinTower() {
-	glColor3f(0.74f, 0.77f, 0.80f);
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 160.0f);
-	glVertex2f(100.0f, 160.0f);
-	glVertex2f(100.0f, 620.0f);
-	glVertex2f(0.0f, 620.0f);
-	glColor3f(0.65f, 0.68f, 0.72f);
-	glVertex2f(-3.0f, 620.0f);
-	glVertex2f(103.0f, 620.0f);
-	glVertex2f(103.0f, 627.0f);
-	glVertex2f(-3.0f, 627.0f);
-	glEnd();
+    glColor3f(0.74f, 0.77f, 0.80f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 160.0f);
+    glVertex2f(100.0f, 160.0f);
+    glVertex2f(100.0f, 620.0f);
+    glVertex2f(0.0f, 620.0f);
+    glColor3f(0.65f, 0.68f, 0.72f);
+    glVertex2f(-3.0f, 620.0f);
+    glVertex2f(103.0f, 620.0f);
+    glVertex2f(103.0f, 627.0f);
+    glVertex2f(-3.0f, 627.0f);
+    glEnd();
 
-	// Outline
-	drawRectOutline(0.0f, 160.0f, 100.0f, 620.0f, 3.0f);
-	drawRectOutline(-3.0f, 620.0f, 103.0f, 627.0f, 3.0f);
+    // Outline
+    drawRectOutline(0.0f, 160.0f, 100.0f, 620.0f, 3.0f);
+    drawRectOutline(-3.0f, 620.0f, 103.0f, 627.0f, 3.0f);
 
-	glColor3f(0.30f, 0.48f, 0.58f); // loop for virtical lines
-	glLineWidth(1.0f);
-	glBegin(GL_LINES);
-	for (int i = 1; i < 6; i++) {
-		float xx = 100.0f * (float)i / 6.0f;
-		glVertex2f(xx, 160.0f);
-		glVertex2f(xx, 620.0f);
-	}
-	glEnd();
+    glColor3f(0.30f, 0.48f, 0.58f); // loop for virtical lines
+    glLineWidth(1.0f);
+    glBegin(GL_LINES);
+    for (int i = 1; i < 6; i++) {
+        float xx = 100.0f * (float)i / 6.0f;
+        glVertex2f(xx, 160.0f);
+        glVertex2f(xx, 620.0f);
+    }
+    glEnd();
 
-	glColor3f(0.20f, 0.40f, 0.52f);
-	float fHeight = 460.0f / 22.0f; // loop for window
-	for (int r = 0; r < 22; r++) {
-		float wy = 160.0f + (float)r * fHeight + fHeight * 0.25f;
-		for (int c = 0; c < 4; c++) {
-			float wx = 8.0f + (float)c * (84.0f / 4.0f);
-			glBegin(GL_QUADS);
-			glVertex2f(wx, wy);
-			glVertex2f(wx + 5.0f, wy);
-			glVertex2f(wx + 5.0f, wy + fHeight * 0.45f);
-			glVertex2f(wx, wy + fHeight * 0.45f);
-			glEnd();
-		}
-	}
-	glColor3f(0.15f, 0.18f, 0.20f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINES);
-	glVertex2f(50.0f, 627.0f);
-	glVertex2f(50.0f, 697.0f);
-	glEnd();
+    glColor3f(0.20f, 0.40f, 0.52f);
+    float fHeight = 460.0f / 22.0f; // loop for window
+    for (int r = 0; r < 22; r++) {
+        float wy = 160.0f + (float)r * fHeight + fHeight * 0.25f;
+        for (int c = 0; c < 4; c++) {
+            float wx = 8.0f + (float)c * (84.0f / 4.0f);
+            glBegin(GL_QUADS);
+            glVertex2f(wx, wy);
+            glVertex2f(wx + 5.0f, wy);
+            glVertex2f(wx + 5.0f, wy + fHeight * 0.45f);
+            glVertex2f(wx, wy + fHeight * 0.45f);
+            glEnd();
+        }
+    }
+    glColor3f(0.15f, 0.18f, 0.20f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(50.0f, 627.0f);
+    glVertex2f(50.0f, 697.0f);
+    glEnd();
 }
+// [S4-OBJ-04] City Buildings -> drawBuildings
 
 void drawBuildings() {
-	glColor3f(0.55f, 0.67f, 0.73f);
-	glBegin(GL_QUADS);
-	glVertex2f(0.0f, 160.0f);
-	glVertex2f(80.0f, 160.0f);
-	glVertex2f(80.0f, 380.0f);
-	glVertex2f(0.0f, 380.0f);
+    glColor3f(0.55f, 0.67f, 0.73f);
+    glBegin(GL_QUADS);
+    glVertex2f(0.0f, 160.0f);
+    glVertex2f(80.0f, 160.0f);
+    glVertex2f(80.0f, 380.0f);
+    glVertex2f(0.0f, 380.0f);
 
-	glVertex2f(90.0f, 160.0f);
-	glVertex2f(165.0f, 160.0f);
-	glVertex2f(165.0f, 420.0f);
-	glVertex2f(90.0f, 420.0f);
+    glVertex2f(90.0f, 160.0f);
+    glVertex2f(165.0f, 160.0f);
+    glVertex2f(165.0f, 420.0f);
+    glVertex2f(90.0f, 420.0f);
 
-	glVertex2f(1520.0f, 160.0f);
-	glVertex2f(1600.0f, 160.0f);
-	glVertex2f(1600.0f, 410.0f);
-	glVertex2f(1520.0f, 410.0f);
-	glEnd();
+    glVertex2f(1520.0f, 160.0f);
+    glVertex2f(1600.0f, 160.0f);
+    glVertex2f(1600.0f, 410.0f);
+    glVertex2f(1520.0f, 410.0f);
+    glEnd();
 
-	drawRectOutline(0.0f, 160.0f, 80.0f, 380.0f, 2.5f, 0.25f, 0.35f, 0.40f);
-	drawRectOutline(90.0f, 160.0f, 165.0f, 420.0f, 2.5f, 0.25f, 0.35f, 0.40f);
-	drawRectOutline(1520.0f, 160.0f, 1600.0f, 410.0f, 2.5f, 0.25f, 0.35f,
-					0.40f);
+    drawRectOutline(0.0f, 160.0f, 80.0f, 380.0f, 2.5f, 0.25f, 0.35f, 0.40f);
+    drawRectOutline(90.0f, 160.0f, 165.0f, 420.0f, 2.5f, 0.25f, 0.35f, 0.40f);
+    drawRectOutline(1520.0f, 160.0f, 1600.0f, 410.0f, 2.5f, 0.25f, 0.35f,
+        0.40f);
 
-	glColor3f(0.35f, 0.55f, 0.65f);
-	for (float y = 190.0f; y < 380.0f; y += 28.0f) { // left most tower
-		glBegin(GL_QUADS);
-		glVertex2f(15.0f, y);
-		glVertex2f(65.0f, y);
-		glVertex2f(65.0f, y + 9.0f);
-		glVertex2f(15.0f, y + 9.0f);
-	}
+    glColor3f(0.35f, 0.55f, 0.65f);
+    for (float y = 190.0f; y < 380.0f; y += 28.0f) { // left most tower
+        glBegin(GL_QUADS);
+        glVertex2f(15.0f, y);
+        glVertex2f(65.0f, y);
+        glVertex2f(65.0f, y + 9.0f);
+        glVertex2f(15.0f, y + 9.0f);
+    }
 }
+// [S4-OBJ-05] City -> drawCity
 
 void drawCity() {
-	drawBuildings();
+    drawBuildings();
 
-	// --- B1 (Left) ---
-	glColor3f(0.78f, 0.72f, 0.65f);
-	glBegin(GL_QUADS);
-	glVertex2f(45.0f, 160.0f);
-	glVertex2f(160.0f, 160.0f);
-	glVertex2f(160.0f, 335.0f);
-	glVertex2f(45.0f, 335.0f);
+    // --- B1 (Left) ---
+    glColor3f(0.78f, 0.72f, 0.65f);
+    glBegin(GL_QUADS);
+    glVertex2f(45.0f, 160.0f);
+    glVertex2f(160.0f, 160.0f);
+    glVertex2f(160.0f, 335.0f);
+    glVertex2f(45.0f, 335.0f);
 
-	glVertex2f(54.0f, 335.0f);
-	glVertex2f(151.0f, 335.0f);
-	glVertex2f(151.0f, 372.5f);
-	glVertex2f(54.0f, 372.5f);
+    glVertex2f(54.0f, 335.0f);
+    glVertex2f(151.0f, 335.0f);
+    glVertex2f(151.0f, 372.5f);
+    glVertex2f(54.0f, 372.5f);
 
-	glVertex2f(65.0f, 372.5f);
-	glVertex2f(139.0f, 372.5f);
-	glVertex2f(139.0f, 410.0f);
-	glVertex2f(65.0f, 410.0f);
-	glEnd();
-	drawWindowGrid(45.0f, 160.0f, 115.0f, 175.0f, 8, 3);
-	drawWindowGrid(54.0f, 335.0f, 97.0f, 37.5f, 2, 2);
-	drawRectOutline(45.0f, 160.0f, 160.0f, 335.0f, 3.0f);
-	drawRectOutline(54.0f, 335.0f, 151.0f, 372.5f, 3.0f);
-	drawRectOutline(65.0f, 372.5f, 139.0f, 410.0f, 3.0f);
+    glVertex2f(65.0f, 372.5f);
+    glVertex2f(139.0f, 372.5f);
+    glVertex2f(139.0f, 410.0f);
+    glVertex2f(65.0f, 410.0f);
+    glEnd();
+    drawWindowGrid(45.0f, 160.0f, 115.0f, 175.0f, 8, 3);
+    drawWindowGrid(54.0f, 335.0f, 97.0f, 37.5f, 2, 2);
+    drawRectOutline(45.0f, 160.0f, 160.0f, 335.0f, 3.0f);
+    drawRectOutline(54.0f, 335.0f, 151.0f, 372.5f, 3.0f);
+    drawRectOutline(65.0f, 372.5f, 139.0f, 410.0f, 3.0f);
 
-	// --- B2
-	glColor3f(0.42f, 0.65f, 0.78f);
-	glBegin(GL_QUADS);
-	glVertex2f(175.0f, 160.0f);
-	glVertex2f(300.0f, 160.0f);
-	glVertex2f(300.0f, 470.0f);
-	glVertex2f(175.0f, 470.0f);
-	glEnd();
-	glColor3f(0.10f, 0.20f, 0.28f);
-	glLineWidth(2.0f);
-	glBegin(GL_LINES);
-	glVertex2f(206.25f, 160.0f);
-	glVertex2f(206.25f, 470.0f);
-	glVertex2f(237.50f, 160.0f);
-	glVertex2f(237.50f, 470.0f);
-	glVertex2f(268.75f, 160.0f);
-	glVertex2f(268.75f, 470.0f);
-	glEnd();
-	drawWindowGrid(175.0f, 160.0f, 125.0f, 310.0f, 10, 3, true);
-	drawRectOutline(175.0f, 160.0f, 300.0f, 470.0f, 3.0f);
+    // --- B2
+    glColor3f(0.42f, 0.65f, 0.78f);
+    glBegin(GL_QUADS);
+    glVertex2f(175.0f, 160.0f);
+    glVertex2f(300.0f, 160.0f);
+    glVertex2f(300.0f, 470.0f);
+    glVertex2f(175.0f, 470.0f);
+    glEnd();
+    glColor3f(0.10f, 0.20f, 0.28f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINES);
+    glVertex2f(206.25f, 160.0f);
+    glVertex2f(206.25f, 470.0f);
+    glVertex2f(237.50f, 160.0f);
+    glVertex2f(237.50f, 470.0f);
+    glVertex2f(268.75f, 160.0f);
+    glVertex2f(268.75f, 470.0f);
+    glEnd();
+    drawWindowGrid(175.0f, 160.0f, 125.0f, 310.0f, 10, 3, true);
+    drawRectOutline(175.0f, 160.0f, 300.0f, 470.0f, 3.0f);
 
-	// --- B3
-	glColor3f(0.78f, 0.38f, 0.32f);
-	glBegin(GL_QUADS);
-	glVertex2f(315.0f, 160.0f);
-	glVertex2f(415.0f, 160.0f);
-	glVertex2f(415.0f, 370.0f);
-	glVertex2f(315.0f, 370.0f);
-	glEnd();
-	drawWindowGrid(315.0f, 160.0f, 100.0f, 210.0f, 7, 3);
-	drawRectOutline(315.0f, 160.0f, 415.0f, 370.0f, 3.0f);
+    // --- B3
+    glColor3f(0.78f, 0.38f, 0.32f);
+    glBegin(GL_QUADS);
+    glVertex2f(315.0f, 160.0f);
+    glVertex2f(415.0f, 160.0f);
+    glVertex2f(415.0f, 370.0f);
+    glVertex2f(315.0f, 370.0f);
+    glEnd();
+    drawWindowGrid(315.0f, 160.0f, 100.0f, 210.0f, 7, 3);
+    drawRectOutline(315.0f, 160.0f, 415.0f, 370.0f, 3.0f);
 
-	// --- B4 Spire ---
-	glColor3f(0.65f, 0.75f, 0.82f);
-	glBegin(GL_QUADS);
-	glVertex2f(420.0f, 160.0f);
-	glVertex2f(525.0f, 160.0f);
-	glVertex2f(525.0f, 600.0f);
-	glVertex2f(420.0f, 600.0f);
-	glEnd();
-	drawWindowGrid(420.0f, 160.0f, 105.0f, 440.0f, 14, 3);
-	glColor3f(0.20f, 0.25f, 0.30f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINES);
-	glVertex2f(472.5f, 600.0f);
-	glVertex2f(472.5f, 670.0f);
-	glEnd();
-	drawRectOutline(420.0f, 160.0f, 525.0f, 600.0f, 3.0f);
+    // --- B4 Spire ---
+    glColor3f(0.65f, 0.75f, 0.82f);
+    glBegin(GL_QUADS);
+    glVertex2f(420.0f, 160.0f);
+    glVertex2f(525.0f, 160.0f);
+    glVertex2f(525.0f, 600.0f);
+    glVertex2f(420.0f, 600.0f);
+    glEnd();
+    drawWindowGrid(420.0f, 160.0f, 105.0f, 440.0f, 14, 3);
+    glColor3f(0.20f, 0.25f, 0.30f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(472.5f, 600.0f);
+    glVertex2f(472.5f, 670.0f);
+    glEnd();
+    drawRectOutline(420.0f, 160.0f, 525.0f, 600.0f, 3.0f);
 
-	// --- B5 Slanted-Roof Modern Skyscraper ---
-	glColor3f(0.30f, 0.52f, 0.70f);
-	glBegin(GL_QUADS);
-	glVertex2f(545.0f, 160.0f);
-	glVertex2f(675.0f, 160.0f);
-	glVertex2f(675.0f, 520.0f);
-	glVertex2f(545.0f, 520.0f);
-	glVertex2f(545.0f, 520.0f);
-	glVertex2f(675.0f, 555.0f);
-	glVertex2f(675.0f, 540.0f);
-	glVertex2f(545.0f, 505.0f);
-	glEnd();
-	drawWindowGrid(545.0f, 160.0f, 130.0f, 355.0f, 13, 3, true);
-	glColor3f(0.12f, 0.14f, 0.18f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex2f(545.0f, 160.0f);
-	glVertex2f(675.0f, 160.0f);
-	glVertex2f(675.0f, 555.0f);
-	glVertex2f(545.0f, 521.0f);
-	glEnd();
+    // --- B5 Slanted-Roof Modern Skyscraper ---
+    glColor3f(0.30f, 0.52f, 0.70f);
+    glBegin(GL_QUADS);
+    glVertex2f(545.0f, 160.0f);
+    glVertex2f(675.0f, 160.0f);
+    glVertex2f(675.0f, 520.0f);
+    glVertex2f(545.0f, 520.0f);
+    glVertex2f(545.0f, 520.0f);
+    glVertex2f(675.0f, 555.0f);
+    glVertex2f(675.0f, 540.0f);
+    glVertex2f(545.0f, 505.0f);
+    glEnd();
+    drawWindowGrid(545.0f, 160.0f, 130.0f, 355.0f, 13, 3, true);
+    glColor3f(0.12f, 0.14f, 0.18f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(545.0f, 160.0f);
+    glVertex2f(675.0f, 160.0f);
+    glVertex2f(675.0f, 555.0f);
+    glVertex2f(545.0f, 521.0f);
+    glEnd();
 
-	// --- B6 Mid Center Building ---
-	glColor3f(0.72f, 0.62f, 0.52f);
-	glBegin(GL_QUADS);
-	glVertex2f(690.0f, 160.0f);
-	glVertex2f(825.0f, 160.0f);
-	glVertex2f(825.0f, 405.0f);
-	glVertex2f(690.0f, 405.0f);
-	glEnd();
-	drawWindowGrid(690.0f, 160.0f, 135.0f, 245.0f, 8, 3);
-	drawRectOutline(690.0f, 160.0f, 825.0f, 405.0f, 3.0f);
+    // --- B6 Mid Center Building ---
+    glColor3f(0.72f, 0.62f, 0.52f);
+    glBegin(GL_QUADS);
+    glVertex2f(690.0f, 160.0f);
+    glVertex2f(825.0f, 160.0f);
+    glVertex2f(825.0f, 405.0f);
+    glVertex2f(690.0f, 405.0f);
+    glEnd();
+    drawWindowGrid(690.0f, 160.0f, 135.0f, 245.0f, 8, 3);
+    drawRectOutline(690.0f, 160.0f, 825.0f, 405.0f, 3.0f);
 
-	// --- B7 Central tower + Triangle  ---
-	glColor3f(0.48f, 0.70f, 0.80f);
-	glBegin(GL_QUADS);
-	glVertex2f(840.0f, 160.0f);
-	glVertex2f(975.0f, 160.0f);
-	glVertex2f(975.0f, 660.0f);
-	glVertex2f(840.0f, 660.0f);
-	glEnd();
-	glColor3f(0.62f, 0.68f, 0.73f);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(840.0f, 660.0f);
-	glVertex2f(975.0f, 660.0f);
-	glVertex2f(907.5f, 725.0f);
-	glEnd();
-	glColor3f(0.20f, 0.25f, 0.30f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINES);
-	glVertex2f(907.5f, 725.0f);
-	glVertex2f(907.5f, 800.0f);
-	glEnd();
-	drawWindowGrid(840.0f, 160.0f, 135.0f, 500.0f, 17, 3, true);
-	drawRectOutline(840.0f, 160.0f, 975.0f, 660.0f, 3.0f);
-	glColor3f(0.12f, 0.14f, 0.18f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex2f(840.0f, 660.0f);
-	glVertex2f(975.0f, 660.0f);
-	glVertex2f(907.5f, 725.0f);
-	glEnd();
+    // --- B7 Central tower + Triangle  ---
+    glColor3f(0.48f, 0.70f, 0.80f);
+    glBegin(GL_QUADS);
+    glVertex2f(840.0f, 160.0f);
+    glVertex2f(975.0f, 160.0f);
+    glVertex2f(975.0f, 660.0f);
+    glVertex2f(840.0f, 660.0f);
+    glEnd();
+    glColor3f(0.62f, 0.68f, 0.73f);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(840.0f, 660.0f);
+    glVertex2f(975.0f, 660.0f);
+    glVertex2f(907.5f, 725.0f);
+    glEnd();
+    glColor3f(0.20f, 0.25f, 0.30f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(907.5f, 725.0f);
+    glVertex2f(907.5f, 800.0f);
+    glEnd();
+    drawWindowGrid(840.0f, 160.0f, 135.0f, 500.0f, 17, 3, true);
+    drawRectOutline(840.0f, 160.0f, 975.0f, 660.0f, 3.0f);
+    glColor3f(0.12f, 0.14f, 0.18f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(840.0f, 660.0f);
+    glVertex2f(975.0f, 660.0f);
+    glVertex2f(907.5f, 725.0f);
+    glEnd();
 
-	// --- B8 Stepped Tower
-	glColor3f(0.70f, 0.67f, 0.60f);
-	glBegin(GL_QUADS);
-	glVertex2f(1010.0f, 160.0f);
-	glVertex2f(1110.0f, 160.0f);
-	glVertex2f(1110.0f, 391.0f);
-	glVertex2f(1010.0f, 391.0f);
+    // --- B8 Stepped Tower
+    glColor3f(0.70f, 0.67f, 0.60f);
+    glBegin(GL_QUADS);
+    glVertex2f(1010.0f, 160.0f);
+    glVertex2f(1110.0f, 160.0f);
+    glVertex2f(1110.0f, 391.0f);
+    glVertex2f(1010.0f, 391.0f);
 
-	glVertex2f(1018.0f, 391.0f);
-	glVertex2f(1102.0f, 391.0f);
-	glVertex2f(1102.0f, 440.5f);
-	glVertex2f(1018.0f, 440.5f);
+    glVertex2f(1018.0f, 391.0f);
+    glVertex2f(1102.0f, 391.0f);
+    glVertex2f(1102.0f, 440.5f);
+    glVertex2f(1018.0f, 440.5f);
 
-	glVertex2f(1028.0f, 440.5f);
-	glVertex2f(1092.0f, 440.5f);
-	glVertex2f(1092.0f, 490.0f);
-	glVertex2f(1028.0f, 490.0f);
-	glEnd();
-	drawWindowGrid(1010.0f, 160.0f, 100.0f, 231.0f, 11, 3);
-	drawRectOutline(1010.0f, 160.0f, 1110.0f, 391.0f, 3.0f);
-	drawRectOutline(1018.0f, 391.0f, 1102.0f, 440.5f, 3.0f);
-	drawRectOutline(1028.0f, 440.5f, 1092.0f, 490.0f, 3.0f);
+    glVertex2f(1028.0f, 440.5f);
+    glVertex2f(1092.0f, 440.5f);
+    glVertex2f(1092.0f, 490.0f);
+    glVertex2f(1028.0f, 490.0f);
+    glEnd();
+    drawWindowGrid(1010.0f, 160.0f, 100.0f, 231.0f, 11, 3);
+    drawRectOutline(1010.0f, 160.0f, 1110.0f, 391.0f, 3.0f);
+    drawRectOutline(1018.0f, 391.0f, 1102.0f, 440.5f, 3.0f);
+    drawRectOutline(1028.0f, 440.5f, 1092.0f, 490.0f, 3.0f);
 
-	glPushMatrix();
-	glTranslatef(1135.0f, 0.0f, 0.0f);
-	drawTwinTower();
-	glPopMatrix();
+    glPushMatrix();
+    glTranslatef(1135.0f, 0.0f, 0.0f);
+    drawTwinTower();
+    glPopMatrix();
 
-	// Tower 2
-	glPushMatrix();
-	glTranslatef(1280.0f, 0.0f, 0.0f);
-	drawTwinTower();
-	glPopMatrix();
+    // Tower 2
+    glPushMatrix();
+    glTranslatef(1280.0f, 0.0f, 0.0f);
+    drawTwinTower();
+    glPopMatrix();
 
-	// --- B9 Right  Triangular Cap ---
-	glColor3f(0.40f, 0.60f, 0.68f);
-	glBegin(GL_QUADS);
-	glVertex2f(1410.0f, 160.0f);
-	glVertex2f(1535.0f, 160.0f);
-	glVertex2f(1535.0f, 560.0f);
-	glVertex2f(1410.0f, 560.0f);
-	glEnd();
-	glColor3f(0.55f, 0.60f, 0.65f);
-	glBegin(GL_TRIANGLES);
-	glVertex2f(1410.0f, 560.0f);
-	glVertex2f(1535.0f, 560.0f);
-	glVertex2f(1472.5f, 620.0f);
-	glEnd();
-	glColor3f(0.20f, 0.25f, 0.30f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINES);
-	glVertex2f(1472.5f, 620.0f);
-	glVertex2f(1472.5f, 685.0f);
-	glEnd();
-	drawWindowGrid(1410.0f, 160.0f, 125.0f, 400.0f, 14, 3, true);
-	drawRectOutline(1410.0f, 160.0f, 1535.0f, 560.0f, 3.0f);
-	glColor3f(0.12f, 0.14f, 0.18f);
-	glLineWidth(3.0f);
-	glBegin(GL_LINE_LOOP);
-	glVertex2f(1410.0f, 560.0f);
-	glVertex2f(1535.0f, 560.0f);
-	glVertex2f(1472.5f, 620.0f);
-	glEnd();
+    // --- B9 Right  Triangular Cap ---
+    glColor3f(0.40f, 0.60f, 0.68f);
+    glBegin(GL_QUADS);
+    glVertex2f(1410.0f, 160.0f);
+    glVertex2f(1535.0f, 160.0f);
+    glVertex2f(1535.0f, 560.0f);
+    glVertex2f(1410.0f, 560.0f);
+    glEnd();
+    glColor3f(0.55f, 0.60f, 0.65f);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(1410.0f, 560.0f);
+    glVertex2f(1535.0f, 560.0f);
+    glVertex2f(1472.5f, 620.0f);
+    glEnd();
+    glColor3f(0.20f, 0.25f, 0.30f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    glVertex2f(1472.5f, 620.0f);
+    glVertex2f(1472.5f, 685.0f);
+    glEnd();
+    drawWindowGrid(1410.0f, 160.0f, 125.0f, 400.0f, 14, 3, true);
+    drawRectOutline(1410.0f, 160.0f, 1535.0f, 560.0f, 3.0f);
+    glColor3f(0.12f, 0.14f, 0.18f);
+    glLineWidth(3.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(1410.0f, 560.0f);
+    glVertex2f(1535.0f, 560.0f);
+    glVertex2f(1472.5f, 620.0f);
+    glEnd();
 
-	// --- B10 Right Tower ---
-	glColor3f(0.68f, 0.38f, 0.35f);
-	glBegin(GL_QUADS);
-	glVertex2f(1530.0f, 160.0f);
-	glVertex2f(1600.0f, 160.0f);
-	glVertex2f(1600.0f, 420.0f);
-	glVertex2f(1530.0f, 420.0f);
-	glEnd();
-	drawWindowGrid(1530.0f, 160.0f, 70.0f, 260.0f, 9, 2);
-	drawRectOutline(1530.0f, 160.0f, 1600.0f, 420.0f, 3.0f);
+    // --- B10 Right Tower ---
+    glColor3f(0.68f, 0.38f, 0.35f);
+    glBegin(GL_QUADS);
+    glVertex2f(1530.0f, 160.0f);
+    glVertex2f(1600.0f, 160.0f);
+    glVertex2f(1600.0f, 420.0f);
+    glVertex2f(1530.0f, 420.0f);
+    glEnd();
+    drawWindowGrid(1530.0f, 160.0f, 70.0f, 260.0f, 9, 2);
+    drawRectOutline(1530.0f, 160.0f, 1600.0f, 420.0f, 3.0f);
 
-	// ---  Low buildings ---
-	glColor3f(0.82f, 0.70f, 0.55f);
-	drawRect(55.0f, 160.0f, 130.0f, 320.0f);
-	drawWindowGrid(55.0f, 160.0f, 75.0f, 160.0f, 5, 2);
-	drawRectOutline(55.0f, 160.0f, 130.0f, 320.0f, 3.0f);
+    // ---  Low buildings ---
+    glColor3f(0.82f, 0.70f, 0.55f);
+    drawRect(55.0f, 160.0f, 130.0f, 320.0f);
+    drawWindowGrid(55.0f, 160.0f, 75.0f, 160.0f, 5, 2);
+    drawRectOutline(55.0f, 160.0f, 130.0f, 320.0f, 3.0f);
 
-	glColor3f(0.70f, 0.42f, 0.40f);
-	drawRect(250.0f, 160.0f, 330.0f, 350.0f);
-	drawWindowGrid(250.0f, 160.0f, 80.0f, 190.0f, 6, 2);
-	drawRectOutline(250.0f, 160.0f, 330.0f, 350.0f, 3.0f);
+    glColor3f(0.70f, 0.42f, 0.40f);
+    drawRect(250.0f, 160.0f, 330.0f, 350.0f);
+    drawWindowGrid(250.0f, 160.0f, 80.0f, 190.0f, 6, 2);
+    drawRectOutline(250.0f, 160.0f, 330.0f, 350.0f, 3.0f);
 
-	glColor3f(0.76f, 0.65f, 0.50f);
-	drawRect(610.0f, 160.0f, 695.0f, 330.0f);
-	drawWindowGrid(610.0f, 160.0f, 85.0f, 170.0f, 5, 2);
-	drawRectOutline(610.0f, 160.0f, 695.0f, 330.0f, 3.0f);
+    glColor3f(0.76f, 0.65f, 0.50f);
+    drawRect(610.0f, 160.0f, 695.0f, 330.0f);
+    drawWindowGrid(610.0f, 160.0f, 85.0f, 170.0f, 5, 2);
+    drawRectOutline(610.0f, 160.0f, 695.0f, 330.0f, 3.0f);
 
-	glColor3f(0.50f, 0.66f, 0.72f);
-	drawRect(970.0f, 160.0f, 1060.0f, 345.0f);
-	drawWindowGrid(970.0f, 160.0f, 90.0f, 185.0f, 6, 2, true);
-	drawRectOutline(970.0f, 160.0f, 1060.0f, 345.0f, 3.0f);
+    glColor3f(0.50f, 0.66f, 0.72f);
+    drawRect(970.0f, 160.0f, 1060.0f, 345.0f);
+    drawWindowGrid(970.0f, 160.0f, 90.0f, 185.0f, 6, 2, true);
+    drawRectOutline(970.0f, 160.0f, 1060.0f, 345.0f, 3.0f);
 
-	glColor3f(0.80f, 0.48f, 0.45f);
-	drawRect(1080.0f, 160.0f, 1160.0f, 320.0f);
-	drawWindowGrid(1080.0f, 160.0f, 80.0f, 160.0f, 5, 2);
-	drawRectOutline(1080.0f, 160.0f, 1160.0f, 320.0f, 3.0f);
+    glColor3f(0.80f, 0.48f, 0.45f);
+    drawRect(1080.0f, 160.0f, 1160.0f, 320.0f);
+    drawWindowGrid(1080.0f, 160.0f, 80.0f, 160.0f, 5, 2);
+    drawRectOutline(1080.0f, 160.0f, 1160.0f, 320.0f, 3.0f);
 
-	glColor3f(0.70f, 0.55f, 0.50f);
-	drawRect(1370.0f, 160.0f, 1440.0f, 305.0f);
-	drawWindowGrid(1370.0f, 160.0f, 70.0f, 145.0f, 5, 2);
-	drawRectOutline(1370.0f, 160.0f, 1440.0f, 305.0f, 3.0f);
+    glColor3f(0.70f, 0.55f, 0.50f);
+    drawRect(1370.0f, 160.0f, 1440.0f, 305.0f);
+    drawWindowGrid(1370.0f, 160.0f, 70.0f, 145.0f, 5, 2);
+    drawRectOutline(1370.0f, 160.0f, 1440.0f, 305.0f, 3.0f);
 }
+// [S4-OBJ-06] Street Light -> streetLight
 
 void streetLight(float x) {
-	glColor3f(0.12f, 0.14f, 0.16f);
-	glLineWidth(4.0f);
-	glBegin(GL_LINES);
-	glVertex2f(x, 160.0f);
-	glVertex2f(x, 235.0f);
-	glVertex2f(x, 235.0f);
-	glVertex2f(x + 22.0f, 235.0f);
-	glEnd();
+    glColor3f(0.12f, 0.14f, 0.16f);
+    glLineWidth(4.0f);
+    glBegin(GL_LINES);
+    glVertex2f(x, 160.0f);
+    glVertex2f(x, 235.0f);
+    glVertex2f(x, 235.0f);
+    glVertex2f(x + 22.0f, 235.0f);
+    glEnd();
 
-	glColor3f(1.0f, 0.85f, 0.30f);
-	drawCircle(x + 25.0f, 232.0f, 6.0f);
+    glColor3f(1.0f, 0.85f, 0.30f);
+    drawCircle(x + 25.0f, 232.0f, 6.0f);
 }
+// [S4-OBJ-07] Street Lights -> drawStreetLights
 
 void drawStreetLights() {
-	streetLight(80);
-	streetLight(300);
-	streetLight(520);
-	streetLight(740);
-	streetLight(960);
-	streetLight(1140);
-	streetLight(1360);
-	streetLight(1580);
+    streetLight(80);
+    streetLight(300);
+    streetLight(520);
+    streetLight(740);
+    streetLight(960);
+    streetLight(1140);
+    streetLight(1360);
+    streetLight(1580);
 }
+// [S4-OBJ-08] Crash Plane -> drawCrashPlane
 
 void drawCrashPlane(float x, float y) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glRotatef(-12.0f, 0.0f, 0.0f, 1.0f);
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glRotatef(-12.0f, 0.0f, 0.0f, 1.0f);
 
-	// Fuselage and nose.
-	glColor3f(0.88f, 0.90f, 0.92f);
-	drawRect(-65.0f, -10.0f, 50.0f, 10.0f);
-	drawTriangle(50.0f, -10.0f, 76.0f, 0.0f, 50.0f, 10.0f);
+    // Fuselage and nose.
+    glColor3f(0.88f, 0.90f, 0.92f);
+    drawRect(-65.0f, -10.0f, 50.0f, 10.0f);
+    drawTriangle(50.0f, -10.0f, 76.0f, 0.0f, 50.0f, 10.0f);
 
-	// Wings and tail.
-	glColor3f(0.55f, 0.60f, 0.68f);
-	drawTriangle(-15.0f, 5.0f, 25.0f, 5.0f, -25.0f, 42.0f);
-	drawTriangle(-15.0f, -5.0f, 25.0f, -5.0f, -25.0f, -42.0f);
-	drawTriangle(-58.0f, 7.0f, -42.0f, 7.0f, -62.0f, 28.0f);
+    // Wings and tail.
+    glColor3f(0.55f, 0.60f, 0.68f);
+    drawTriangle(-15.0f, 5.0f, 25.0f, 5.0f, -25.0f, 42.0f);
+    drawTriangle(-15.0f, -5.0f, 25.0f, -5.0f, -25.0f, -42.0f);
+    drawTriangle(-58.0f, 7.0f, -42.0f, 7.0f, -62.0f, 28.0f);
 
-	// Cockpit window.
-	glColor3f(0.12f, 0.25f, 0.35f);
-	drawCircle(51.0f, 2.0f, 4.0f, 12);
-	glPopMatrix();
+    // Cockpit window.
+    glColor3f(0.12f, 0.25f, 0.35f);
+    drawCircle(51.0f, 2.0f, 4.0f, 12);
+    glPopMatrix();
 }
+// [S4-OBJ-09] Crash Effect -> drawCrashEffect
 
 void drawCrashEffect() {
-	if (!crashImpacted)
-		return;
+    if (!crashImpacted)
+        return;
 
-	// A short fire flash followed by simple rising smoke.
-	if (crashEffectTimer < 0.7f) {
-		glColor3f(1.0f, 0.35f, 0.03f);
-		drawCircle(CRASH_TARGET_X, CRASH_TARGET_Y, 30.0f, 24);
-		glColor3f(1.0f, 0.82f, 0.08f);
-		drawCircle(CRASH_TARGET_X - 7.0f, CRASH_TARGET_Y, 16.0f, 20);
-	}
+    // A short fire flash followed by simple rising smoke.
+    if (crashEffectTimer < 0.7f) {
+        glColor3f(1.0f, 0.35f, 0.03f);
+        drawCircle(CRASH_TARGET_X, CRASH_TARGET_Y, 30.0f, 24);
+        glColor3f(1.0f, 0.82f, 0.08f);
+        drawCircle(CRASH_TARGET_X - 7.0f, CRASH_TARGET_Y, 16.0f, 20);
+    }
 
-	float rise = std::min(crashEffectTimer * 22.0f, 115.0f);
-	glColor3f(0.20f, 0.20f, 0.22f);
-	drawCircle(CRASH_TARGET_X, CRASH_TARGET_Y + 18.0f + rise, 22.0f, 20);
-	drawCircle(CRASH_TARGET_X + 14.0f, CRASH_TARGET_Y + 48.0f + rise * 0.75f,
-			   27.0f, 20);
-	glColor3f(0.32f, 0.32f, 0.34f);
-	drawCircle(CRASH_TARGET_X - 10.0f, CRASH_TARGET_Y + 78.0f + rise * 0.5f,
-			   31.0f, 20);
+    float rise = std::min(crashEffectTimer * 22.0f, 115.0f);
+    glColor3f(0.20f, 0.20f, 0.22f);
+    drawCircle(CRASH_TARGET_X, CRASH_TARGET_Y + 18.0f + rise, 22.0f, 20);
+    drawCircle(CRASH_TARGET_X + 14.0f, CRASH_TARGET_Y + 48.0f + rise * 0.75f,
+        27.0f, 20);
+    glColor3f(0.32f, 0.32f, 0.34f);
+    drawCircle(CRASH_TARGET_X - 10.0f, CRASH_TARGET_Y + 78.0f + rise * 0.5f,
+        31.0f, 20);
 }
 
 void resetCrashAnimation() {
-	crashStarted = false;
-	crashImpacted = false;
-	crashPlaneX = -140.0f;
-	crashPlaneY = 760.0f;
-	crashEffectTimer = 0.0f;
+    crashStarted = false;
+    crashImpacted = false;
+    crashPlaneX = -140.0f;
+    crashPlaneY = 760.0f;
+    crashEffectTimer = 0.0f;
 }
 
 void startCrashAnimation() {
-	resetCrashAnimation();
-	crashStarted = true;
+    resetCrashAnimation();
+    crashStarted = true;
 }
+// [S4-OBJ-10] Car 1 -> drawCar
 
 void drawCar(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
 
-	// Car body
-	glColor3ub(245, 130, 195);
-	glBegin(GL_QUADS);
-	glVertex2f(-2.0f, 0.0f);
-	glVertex2f(2.0f, 0.0f);
-	glVertex2f(2.0f, 1.0f);
-	glVertex2f(-2.0f, 1.0f);
-	glEnd();
+    glColor3ub(245, 130, 195);
+    glBegin(GL_QUADS);
+    glVertex2f(-2.0f, 0.0f);
+    glVertex2f(2.0f, 0.0f);
+    glVertex2f(2.0f, 1.0f);
+    glVertex2f(-2.0f, 1.0f);
+    glEnd();
 
-	// Car roof
-	glColor3ub(245, 130, 195);
-	glBegin(GL_POLYGON);
-	glVertex2f(-1.4f, 1.0f);
-	glVertex2f(-0.8f, 2.0f);
-	glVertex2f(0.8f, 2.0f);
-	glVertex2f(1.4f, 1.0f);
-	glEnd();
+    glColor3ub(245, 130, 195);
+    glBegin(GL_POLYGON);
+    glVertex2f(-1.4f, 1.0f);
+    glVertex2f(-0.8f, 2.0f);
+    glVertex2f(0.8f, 2.0f);
+    glVertex2f(1.4f, 1.0f);
+    glEnd();
 
-	// Left window
-	glColor3ub(130, 255, 255);
-	glBegin(GL_QUADS);
-	glVertex2f(-0.7f, 1.1f);
-	glVertex2f(-0.1f, 1.1f);
-	glVertex2f(-0.1f, 1.8f);
-	glVertex2f(-0.6f, 1.8f);
-	glEnd();
+    glColor3ub(130, 255, 255);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.7f, 1.1f);
+    glVertex2f(-0.1f, 1.1f);
+    glVertex2f(-0.1f, 1.8f);
+    glVertex2f(-0.6f, 1.8f);
+    glEnd();
 
-	// Right window
-	glBegin(GL_QUADS);
-	glVertex2f(0.1f, 1.1f);
-	glVertex2f(0.7f, 1.1f);
-	glVertex2f(0.6f, 1.8f);
-	glVertex2f(0.1f, 1.8f);
-	glEnd();
+    glBegin(GL_QUADS);
+    glVertex2f(0.1f, 1.1f);
+    glVertex2f(0.7f, 1.1f);
+    glVertex2f(0.6f, 1.8f);
+    glVertex2f(0.1f, 1.8f);
+    glEnd();
 
-	// Left wheel (outer tire + inner hub)
-	glColor3f(0.12f, 0.12f, 0.12f);
-	drawCircle(-1.1f, 0.0f, 0.45f, 20);
-	glColor3f(0.41f, 0.41f, 0.41f);
-	drawCircle(-1.1f, 0.0f, 0.18f, 20);
+    glColor3f(0.12f, 0.12f, 0.12f);
+    drawCircle(-1.1f, 0.0f, 0.45f, 20);
+    glColor3f(0.41f, 0.41f, 0.41f);
+    drawCircle(-1.1f, 0.0f, 0.18f, 20);
 
-	// Right wheel (outer tire + inner hub)
-	glColor3f(0.12f, 0.12f, 0.12f);
-	drawCircle(1.1f, 0.0f, 0.45f, 20);
-	glColor3f(0.41f, 0.41f, 0.41f);
-	drawCircle(1.1f, 0.0f, 0.18f, 20);
+    glColor3f(0.12f, 0.12f, 0.12f);
+    drawCircle(1.1f, 0.0f, 0.45f, 20);
+    glColor3f(0.41f, 0.41f, 0.41f);
+    drawCircle(1.1f, 0.0f, 0.18f, 20);
 
-	glPopMatrix();
+    glPopMatrix();
 }
+// [S4-OBJ-11] Car 2 -> drawCar2
 
 void drawCar2(float x, float y, float scale) {
-	glPushMatrix();
-	glTranslatef(x, y, 0.0f);
-	glScalef(scale, scale, 1.0f);
+    glPushMatrix();
+    glTranslatef(x, y, 0.0f);
+    glScalef(scale, scale, 1.0f);
 
-	// Car body
-	glColor3ub(70, 150, 255);
-	glBegin(GL_QUADS);
-	glVertex2f(-2.0f, 0.0f);
-	glVertex2f(2.0f, 0.0f);
-	glVertex2f(2.0f, 1.0f);
-	glVertex2f(-2.0f, 1.0f);
-	glEnd();
+    glColor3ub(70, 150, 255);
+    glBegin(GL_QUADS);
+    glVertex2f(-2.0f, 0.0f);
+    glVertex2f(2.0f, 0.0f);
+    glVertex2f(2.0f, 1.0f);
+    glVertex2f(-2.0f, 1.0f);
+    glEnd();
 
-	// Car roof
-	glColor3ub(70, 150, 255);
-	glBegin(GL_POLYGON);
-	glVertex2f(-1.4f, 1.0f);
-	glVertex2f(-0.8f, 2.0f);
-	glVertex2f(0.8f, 2.0f);
-	glVertex2f(1.4f, 1.0f);
-	glEnd();
+    glColor3ub(70, 150, 255);
+    glBegin(GL_POLYGON);
+    glVertex2f(-1.4f, 1.0f);
+    glVertex2f(-0.8f, 2.0f);
+    glVertex2f(0.8f, 2.0f);
+    glVertex2f(1.4f, 1.0f);
+    glEnd();
 
-	// Left window
-	glColor3ub(130, 255, 255);
-	glBegin(GL_QUADS);
-	glVertex2f(-0.7f, 1.1f);
-	glVertex2f(-0.1f, 1.1f);
-	glVertex2f(-0.1f, 1.8f);
-	glVertex2f(-0.6f, 1.8f);
-	glEnd();
+    glColor3ub(130, 255, 255);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.7f, 1.1f);
+    glVertex2f(-0.1f, 1.1f);
+    glVertex2f(-0.1f, 1.8f);
+    glVertex2f(-0.6f, 1.8f);
+    glEnd();
 
-	// Right window
-	glBegin(GL_QUADS);
-	glVertex2f(0.1f, 1.1f);
-	glVertex2f(0.7f, 1.1f);
-	glVertex2f(0.6f, 1.8f);
-	glVertex2f(0.1f, 1.8f);
-	glEnd();
+    glBegin(GL_QUADS);
+    glVertex2f(0.1f, 1.1f);
+    glVertex2f(0.7f, 1.1f);
+    glVertex2f(0.6f, 1.8f);
+    glVertex2f(0.1f, 1.8f);
+    glEnd();
 
-	// Left wheel
-	glColor3f(0.12f, 0.12f, 0.12f);
-	drawCircle(-1.1f, 0.0f, 0.45f, 20);
+    glColor3f(0.12f, 0.12f, 0.12f);
+    drawCircle(-1.1f, 0.0f, 0.45f, 20);
 
-	// Left wheel inner
-	glColor3f(0.41f, 0.41f, 0.41f);
-	drawCircle(-1.1f, 0.0f, 0.18f, 20);
+    glColor3f(0.41f, 0.41f, 0.41f);
+    drawCircle(-1.1f, 0.0f, 0.18f, 20);
 
-	// Right wheel
-	glColor3f(0.12f, 0.12f, 0.12f);
-	drawCircle(1.1f, 0.0f, 0.45f, 20);
+    glColor3f(0.12f, 0.12f, 0.12f);
+    drawCircle(1.1f, 0.0f, 0.45f, 20);
 
-	// Right wheel inner
-	glColor3f(0.41f, 0.41f, 0.41f);
-	drawCircle(1.1f, 0.0f, 0.18f, 20);
+    glColor3f(0.41f, 0.41f, 0.41f);
+    drawCircle(1.1f, 0.0f, 0.18f, 20);
 
-	glPopMatrix();
+    glPopMatrix();
 }
+// [S4-OBJ-12] Road -> drawRoad
 
 void drawRoad() {
-	// Grass buffer
-	glColor3f(0.25f, 0.55f, 0.25f);
-	drawRect(0.0f, 130.0f, (float)WIN_W, 160.0f);
+    // Grass buffer
+    glColor3f(0.25f, 0.55f, 0.25f);
+    drawRect(0.0f, 130.0f, (float)WIN_W, 160.0f);
 
-	// Sidewalk
-	glColor3f(0.70f, 0.70f, 0.70f);
-	drawRect(0.0f, 95.0f, (float)WIN_W, 130.0f);
+    // Sidewalk
+    glColor3f(0.70f, 0.70f, 0.70f);
+    drawRect(0.0f, 95.0f, (float)WIN_W, 130.0f);
 
-	glColor3f(0.55f, 0.55f, 0.55f);
-	glLineWidth(1.0f);
-	glBegin(GL_LINES);
-	for (float x = 0.0f; x <= (float)WIN_W; x += 40.0f) {
-		glVertex2f(x, 95.0f);
-		glVertex2f(x, 130.0f);
-	}
-	glEnd();
+    glColor3f(0.55f, 0.55f, 0.55f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINES);
+    for (float x = 0.0f; x <= (float)WIN_W; x += 40.0f) {
+        glVertex2f(x, 95.0f);
+        glVertex2f(x, 130.0f);
+    }
+    glEnd();
 
-	// road
-	glColor3f(0.12f, 0.13f, 0.15f);
-	drawRect(0.0f, 0.0f, (float)WIN_W, 95.0f);
+    // road
+    glColor3f(0.12f, 0.13f, 0.15f);
+    drawRect(0.0f, 0.0f, (float)WIN_W, 95.0f);
 
-	// Yellow
-	glColor3f(0.95f, 0.85f, 0.20f);
-	drawRect(0.0f, 45.0f, (float)WIN_W, 49.0f);
+    // Yellow
+    glColor3f(0.95f, 0.85f, 0.20f);
+    drawRect(0.0f, 45.0f, (float)WIN_W, 49.0f);
 
-	// White
-	glColor3f(0.95f, 0.95f, 0.95f);
-	for (float x = 0.0f; x < (float)WIN_W; x += 100.0f) {
-		drawRect(x, 72.0f, x + 55.0f, 76.0f);
-		drawRect(x, 18.0f, x + 55.0f, 22.0f);
-	}
+    // White
+    glColor3f(0.95f, 0.95f, 0.95f);
+    for (float x = 0.0f; x < (float)WIN_W; x += 100.0f) {
+        drawRect(x, 72.0f, x + 55.0f, 76.0f);
+        drawRect(x, 18.0f, x + 55.0f, 22.0f);
+    }
 }
 
 //===============================scene4===================================================
 
 void scene4Display() {
-	if (isNightMode)
-		glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
-	else
-		glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
+    if (isNightMode)
+        glClearColor(0.04f, 0.05f, 0.18f, 1.0f);
+    else
+        glClearColor(0.52f, 0.78f, 0.96f, 1.0f);
 
-	glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-	if (!isNightMode && !rainMode) {
-		glPushMatrix();
-		glTranslatef(550.0f, 250.0f, 0.0f);
-		sun();
-		glPopMatrix();
-	};
+    if (!isNightMode && !rainMode) {
+        glPushMatrix();
+        glTranslatef(550.0f, 250.0f, 0.0f);
+        sun();
+        glPopMatrix();
+    };
 
-	drawClouds();
-	drawMountains();
-	drawHills();
-	drawCity();
-	drawStreetLights();
-	drawRoad();
-	drawTrees();
+    drawClouds();
+    drawMountains();
+    drawHills();
+    drawCity();
+    drawStreetLights();
+    drawRoad();
+    drawTrees();
 
-	// Draw the first car on the lower road lane.
-	drawCar(carX, CAR_LANE_Y, CAR_SCALE);
+    // Draw the first car on the lower road lane.
+    drawCar(carX, CAR_LANE_Y, CAR_SCALE);
 
-	// Second car, moving in the opposite direction on the upper lane.
-	drawCar2(car2X, CAR2_LANE_Y, CAR2_SCALE);
+    // Second car, moving in the opposite direction on the upper lane.
+    drawCar2(car2X, CAR2_LANE_Y, CAR2_SCALE);
 
-	if (crashStarted && !crashImpacted)
-		drawCrashPlane(crashPlaneX, crashPlaneY);
-	drawCrashEffect();
+    if (crashStarted && !crashImpacted)
+        drawCrashPlane(crashPlaneX, crashPlaneY);
+    drawCrashEffect();
 
-	if (isNightMode)
-		drawNightOverlay();
-	drawRain();
+    if (isNightMode)
+        drawNightOverlay();
+    drawRain();
 }
 
 void scene4Update() {
-	cloudOffset += CLOUD_SPEED;
+    cloudOffset += CLOUD_SPEED;
 
-	carX += CAR_SPEED;
-	if (carX > (float)WIN_W + 250.0f) {
-		carX = -250.0f;
-	}
+    carX += CAR_SPEED;
+    if (carX > (float)WIN_W + 250.0f) {
+        carX = -250.0f;
+    }
 
-	// Advance the second Scene 4 car from right to left.
-	car2X -= CAR2_SPEED;
-	if (car2X < -250.0f) {
-		car2X = (float)WIN_W + 250.0f;
-	}
+    // Advance the second Scene 4 car from right to left.
+    car2X -= CAR2_SPEED;
+    if (car2X < -250.0f) {
+        car2X = (float)WIN_W + 250.0f;
+    }
 
-	if (crashStarted) {
-		if (!crashImpacted) {
-			crashPlaneX += CRASH_PLANE_SPEED;
-			crashPlaneY -= 1.45f;
+    if (crashStarted) {
+        if (!crashImpacted) {
+            crashPlaneX += CRASH_PLANE_SPEED;
+            crashPlaneY -= 1.45f;
 
-			if (crashPlaneX + 76.0f >= CRASH_TARGET_X) {
-				crashImpacted = true;
-				crashEffectTimer = 0.0f;
-			}
-		} else if (crashEffectTimer < 8.0f) {
-			crashEffectTimer += 0.016f;
-		}
-	}
+            if (crashPlaneX + 76.0f >= CRASH_TARGET_X) {
+                crashImpacted = true;
+                crashEffectTimer = 0.0f;
+            }
+        }
+        else if (crashEffectTimer < 8.0f) {
+            crashEffectTimer += 0.016f;
+        }
+    }
 }
 
 void scene4Keyboard(unsigned char key, int, int) {
-	if (key == 'p' || key == 'P')
-		startCrashAnimation();
-	else
-		handleEnvironmentKey(key);
+    if (key == 'p' || key == 'P')
+        startCrashAnimation();
+    else
+        handleEnvironmentKey(key);
 }
 
 void scene4Mouse(int, int, int, int) {}
 
 void scene4SpecialKeys(int key, int, int) {
-	if (key == GLUT_KEY_RIGHT)
-		switchScene(1);
-	else if (key == GLUT_KEY_LEFT)
-		switchScene(3);
+    if (key == GLUT_KEY_RIGHT)
+        switchScene(1);
+    else if (key == GLUT_KEY_LEFT)
+        switchScene(3);
 }
 
-// The general display callback only selects the active scene.
 void display() {
-	switch (currentScene) {
-	case 1:
-		scene1Display();
-		break;
-	case 2:
-		scene2Display();
-		break;
-	case 3:
-		scene3Display();
-		break;
-	case 4:
-		scene4Display();
-		break;
-	}
-	glFlush();
+    switch (currentScene) {
+    case 1:
+        scene1Display();
+        break;
+    case 2:
+        scene2Display();
+        break;
+    case 3:
+        scene3Display();
+        break;
+    case 4:
+        scene4Display();
+        break;
+    }
+    glFlush();
 }
 
-// The general timer callback only updates the active scene.
 void update(int) {
-	updateRain();
-	switch (currentScene) {
-	case 1:
-		scene1Update();
-		break;
-	case 2:
-		scene2Update();
-		break;
-	case 3:
-		scene3Update();
-		break;
-	case 4:
-		scene4Update();
-		break;
-	}
+    updateRain();
+    switch (currentScene) {
+    case 1:
+        scene1Update();
+        break;
+    case 2:
+        scene2Update();
+        break;
+    case 3:
+        scene3Update();
+        break;
+    case 4:
+        scene4Update();
+        break;
+    }
 
-	glutPostRedisplay();
-	glutTimerFunc(16, update, 0);
+    glutPostRedisplay();
+    glutTimerFunc(16, update, 0);
 }
 
 // Direct scene switching helper
 void switchScene(int scene) {
-	if (scene < 1)
-		scene = 1;
-	if (scene > 4)
-		scene = 4;
+    if (scene < 1)
+        scene = 1;
+    if (scene > 4)
+        scene = 4;
 
-	// Reset scene-specific animations when leaving or re-entering their scene.
-	if (scene != currentScene || scene == 1)
-		resetBombingAnimation();
-	if (scene != currentScene || scene == 4)
-		resetCrashAnimation();
+    // Reset scene-specific animations when leaving or re-entering their scene.
+    if (scene != currentScene || scene == 1)
+        resetBombingAnimation();
+    if (scene != currentScene || scene == 4)
+        resetCrashAnimation();
 
-	currentScene = scene;
-	glutPostRedisplay();
+    currentScene = scene;
+    glutPostRedisplay();
 }
 
 void mouse(int button, int state, int x, int y) {
-	switch (currentScene) {
-	case 1:
-		scene1Mouse(button, state, x, y);
-		break;
-	case 2:
-		scene2Mouse(button, state, x, y);
-		break;
-	case 3:
-		scene3Mouse(button, state, x, y);
-		break;
-	case 4:
-		scene4Mouse(button, state, x, y);
-		break;
-	}
-	glutPostRedisplay();
+    switch (currentScene) {
+    case 1:
+        scene1Mouse(button, state, x, y);
+        break;
+    case 2:
+        scene2Mouse(button, state, x, y);
+        break;
+    case 3:
+        scene3Mouse(button, state, x, y);
+        break;
+    case 4:
+        scene4Mouse(button, state, x, y);
+        break;
+    }
+    glutPostRedisplay();
 }
 
 void specialKeys(int key, int x, int y) {
-	switch (currentScene) {
-	case 1:
-		scene1SpecialKeys(key, x, y);
-		break;
-	case 2:
-		scene2SpecialKeys(key, x, y);
-		break;
-	case 3:
-		scene3SpecialKeys(key, x, y);
-		break;
-	case 4:
-		scene4SpecialKeys(key, x, y);
-		break;
-	}
+    switch (currentScene) {
+    case 1:
+        scene1SpecialKeys(key, x, y);
+        break;
+    case 2:
+        scene2SpecialKeys(key, x, y);
+        break;
+    case 3:
+        scene3SpecialKeys(key, x, y);
+        break;
+    case 4:
+        scene4SpecialKeys(key, x, y);
+        break;
+    }
 }
 
-// Number keys are shared navigation; all other keys go to the active scene.
 void keyboard(unsigned char key, int x, int y) {
-	if (key >= '1' && key <= '4') {
-		switchScene(key - '0');
-	} else {
-		switch (currentScene) {
-		case 1:
-			scene1Keyboard(key, x, y);
-			break;
-		case 2:
-			scene2Keyboard(key, x, y);
-			break;
-		case 3:
-			scene3Keyboard(key, x, y);
-			break;
-		case 4:
-			scene4Keyboard(key, x, y);
-			break;
-		}
-	}
-	glutPostRedisplay();
+    if (key >= '1' && key <= '4') {
+        switchScene(key - '0');
+    }
+    else {
+        switch (currentScene) {
+        case 1:
+            scene1Keyboard(key, x, y);
+            break;
+        case 2:
+            scene2Keyboard(key, x, y);
+            break;
+        case 3:
+            scene3Keyboard(key, x, y);
+            break;
+        case 4:
+            scene4Keyboard(key, x, y);
+            break;
+        }
+    }
+    glutPostRedisplay();
 }
 
 void init() {
-	initRain();
-	glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0.0, WIN_W, 0.0, WIN_H);
-	glMatrixMode(GL_MODELVIEW);
+    initRain();
+    glClearColor(0.58f, 0.78f, 0.92f, 1.0f);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, WIN_W, 0.0, WIN_H);
+    glMatrixMode(GL_MODELVIEW);
 }
 
-int main(int argc, char **argv) {
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-	glutInitWindowSize(WIN_W, WIN_H);
-	glutCreateWindow("GlutWindow");
-	init();
-	glutDisplayFunc(display);
-	glutKeyboardFunc(keyboard);
-	glutSpecialFunc(specialKeys);
-	glutMouseFunc(mouse);
-	glutPassiveMotionFunc(passiveMotion);
-	glutTimerFunc(16, update, 0);
-	glutMainLoop();
-	return 0;
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(WIN_W, WIN_H);
+    glutCreateWindow("GlutWindow");
+    init();
+    glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(specialKeys);
+    glutMouseFunc(mouse);
+    glutPassiveMotionFunc(passiveMotion);
+    glutTimerFunc(16, update, 0);
+    glutMainLoop();
+    return 0;
 }
