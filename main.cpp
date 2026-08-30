@@ -43,6 +43,16 @@ float bombDropPosition[NUM_BOMBS] = {200.0f, 500.0f, 800.0f, 1100.0f, 1400.0f};
 float flashTimer = 0.0f;
 float transitionTimer = 0.0f;
 
+// Simple, non-graphic plane crash animation for Scene 4 (press P).
+bool crashStarted = false;
+bool crashImpacted = false;
+float crashPlaneX = -140.0f;
+float crashPlaneY = 760.0f;
+float crashEffectTimer = 0.0f;
+const float CRASH_PLANE_SPEED = 7.0f;
+const float CRASH_TARGET_X = 1135.0f;
+const float CRASH_TARGET_Y = 500.0f;
+
 // Global weather state for all scenes
 bool rainMode = false;
 float rainOffset = 0.0f;
@@ -2972,6 +2982,63 @@ void drawStreetLights() {
 	streetLight(1580);
 }
 
+void drawCrashPlane(float x, float y) {
+	glPushMatrix();
+	glTranslatef(x, y, 0.0f);
+	glRotatef(-12.0f, 0.0f, 0.0f, 1.0f);
+
+	// Fuselage and nose.
+	glColor3f(0.88f, 0.90f, 0.92f);
+	drawRect(-65.0f, -10.0f, 50.0f, 10.0f);
+	drawTriangle(50.0f, -10.0f, 76.0f, 0.0f, 50.0f, 10.0f);
+
+	// Wings and tail.
+	glColor3f(0.55f, 0.60f, 0.68f);
+	drawTriangle(-15.0f, 5.0f, 25.0f, 5.0f, -25.0f, 42.0f);
+	drawTriangle(-15.0f, -5.0f, 25.0f, -5.0f, -25.0f, -42.0f);
+	drawTriangle(-58.0f, 7.0f, -42.0f, 7.0f, -62.0f, 28.0f);
+
+	// Cockpit window.
+	glColor3f(0.12f, 0.25f, 0.35f);
+	drawCircle(51.0f, 2.0f, 4.0f, 12);
+	glPopMatrix();
+}
+
+void drawCrashEffect() {
+	if (!crashImpacted)
+		return;
+
+	// A short fire flash followed by simple rising smoke.
+	if (crashEffectTimer < 0.7f) {
+		glColor3f(1.0f, 0.35f, 0.03f);
+		drawCircle(CRASH_TARGET_X, CRASH_TARGET_Y, 30.0f, 24);
+		glColor3f(1.0f, 0.82f, 0.08f);
+		drawCircle(CRASH_TARGET_X - 7.0f, CRASH_TARGET_Y, 16.0f, 20);
+	}
+
+	float rise = std::min(crashEffectTimer * 22.0f, 115.0f);
+	glColor3f(0.20f, 0.20f, 0.22f);
+	drawCircle(CRASH_TARGET_X, CRASH_TARGET_Y + 18.0f + rise, 22.0f, 20);
+	drawCircle(CRASH_TARGET_X + 14.0f, CRASH_TARGET_Y + 48.0f + rise * 0.75f,
+			   27.0f, 20);
+	glColor3f(0.32f, 0.32f, 0.34f);
+	drawCircle(CRASH_TARGET_X - 10.0f, CRASH_TARGET_Y + 78.0f + rise * 0.5f,
+			   31.0f, 20);
+}
+
+void resetCrashAnimation() {
+	crashStarted = false;
+	crashImpacted = false;
+	crashPlaneX = -140.0f;
+	crashPlaneY = 760.0f;
+	crashEffectTimer = 0.0f;
+}
+
+void startCrashAnimation() {
+	resetCrashAnimation();
+	crashStarted = true;
+}
+
 void drawRoad() {
 	// Grass buffer
 	glColor3f(0.25f, 0.55f, 0.25f);
@@ -3071,6 +3138,10 @@ void renderScene4() {
 	drawRoad();
 	drawTrees();
 
+	if (crashStarted && !crashImpacted)
+		drawCrashPlane(crashPlaneX, crashPlaneY);
+	drawCrashEffect();
+
 	if (isNightMode) {
 		drawNightOverlay();
 	}
@@ -3122,6 +3193,21 @@ void update(int value) {
 		rainOffset += 18.0f;
 		if (rainOffset > WIN_H + 120.0f)
 			rainOffset = 0.0f;
+	}
+
+	if (crashStarted && currentScene == 4) {
+		if (!crashImpacted) {
+			crashPlaneX += CRASH_PLANE_SPEED;
+			crashPlaneY -= 1.45f;
+
+			// The plane's nose reaches the left face of the first tower.
+			if (crashPlaneX + 76.0f >= CRASH_TARGET_X) {
+				crashImpacted = true;
+				crashEffectTimer = 0.0f;
+			}
+		} else if (crashEffectTimer < 8.0f) {
+			crashEffectTimer += 0.016f;
+		}
 	}
 
 	if (bombingStarted && currentScene == 1) {
@@ -3178,9 +3264,11 @@ void switchScene(int scene) {
 	if (scene > 4)
 		scene = 4;
 
-	// Reset an unfinished bombing animation when leaving/re-entering Scene 1.
+	// Reset scene-specific animations when leaving or re-entering their scene.
 	if (scene != currentScene || scene == 1)
 		resetBombingAnimation();
+	if (scene != currentScene || scene == 4)
+		resetCrashAnimation();
 
 	currentScene = scene;
 	glutPostRedisplay();
@@ -3205,9 +3293,11 @@ void specialKeys(int key, int x, int y) {
 		switchScene(currentScene == 1 ? 4 : currentScene - 1);
 }
 
-// D = day, N = night, R = rain toggle, 1-4 = direct scene selection.
+// D = day, N = night, R = rain, P = Scene 4 plane animation, 1-4 = scene.
 void keyboard(unsigned char key, int x, int y) {
-	if (key == 'd' || key == 'D')
+	if ((key == 'p' || key == 'P') && currentScene == 4)
+		startCrashAnimation();
+	else if (key == 'd' || key == 'D')
 		isNightMode = false;
 	else if (key == 'n' || key == 'N')
 		isNightMode = true;
